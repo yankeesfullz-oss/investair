@@ -5,7 +5,8 @@ import { Search, MapPin, CalendarRange, Navigation } from "lucide-react";
 import { useMemo, useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSearchExperience } from "./searchExperienceProvider";
-import { investmentProperties, michiganInvestmentProperties } from "@/lib/investmentProperties";
+import { apiFetch } from "@/lib/apiClient";
+import { filterPublicInvestmentProperties } from "@/lib/investmentPropertyUtils";
 
 const MONTH_OPTIONS = [3, 6, 9, 12, 18, 24];
 
@@ -16,6 +17,7 @@ export default function SearchBar() {
   const [query, setQuery] = useState("");
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [months, setMonths] = useState(6);
+  const [properties, setProperties] = useState([]);
   const containerRef = useRef(null);
 
   // Close dropdowns when clicking outside
@@ -29,10 +31,33 @@ export default function SearchBar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadProperties() {
+      try {
+        const response = await apiFetch("/api/properties");
+        if (!ignore) {
+          setProperties(filterPublicInvestmentProperties(response));
+        }
+      } catch (error) {
+        if (!ignore) {
+          setProperties([]);
+        }
+      }
+    }
+
+    void loadProperties();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
   const filteredLocations = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [];
-    return investmentProperties.filter((property) => {
+    return properties.filter((property) => {
       const haystack = [
         property.name,
         property.city,
@@ -45,7 +70,9 @@ export default function SearchBar() {
 
       return haystack.includes(q);
     });
-  }, [query]);
+  }, [properties, query]);
+
+  const featuredProperty = properties[0] || null;
 
   const resolvedActiveTab = mode === "buy" && activeTab === "months" ? null : activeTab;
   const showDuration = mode === "invest";
@@ -160,21 +187,24 @@ export default function SearchBar() {
           <div className="space-y-1">
             {/* NEARBY OPTION - Always first */}
             {!query && (
-              <button
-                onClick={() => handleLocationSelect(michiganInvestmentProperties[0])}
-                className="group flex w-full items-start gap-4 rounded-xl p-3 text-left transition-colors hover:bg-rose-50 sm:items-center"
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-100 text-rose-600 group-hover:bg-rose-500 group-hover:text-white transition-colors">
-                  <Navigation size={18} fill="currentColor" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-bold text-neutral-900">Featured Michigan opportunity</p>
-                  <p className="text-xs text-neutral-500">Start with {michiganInvestmentProperties[0].name} in {michiganInvestmentProperties[0].city}</p>
-                </div>
-              </button>
+              featuredProperty ? (
+                <button
+                  onClick={() => handleLocationSelect(featuredProperty)}
+                  className="group flex w-full items-start gap-4 rounded-xl p-3 text-left transition-colors hover:bg-rose-50 sm:items-center"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-100 text-rose-600 transition-colors group-hover:bg-rose-500 group-hover:text-white">
+                    <Navigation size={18} fill="currentColor" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-bold text-neutral-900">Featured backend opportunity</p>
+                    <p className="text-xs text-neutral-500">Start with {featuredProperty.name} in {featuredProperty.city}</p>
+                  </div>
+                </button>
+              ) : (
+                <p className="py-8 text-center text-sm text-neutral-400">No live backend properties are available yet.</p>
+              )
             )}
 
-              <p className="py-8 text-center text-sm text-neutral-400">No U.S. investment properties matched that search.</p>
             {query && filteredLocations.length > 0 ? (
               filteredLocations.slice(0, 8).map((property) => (
                 <button

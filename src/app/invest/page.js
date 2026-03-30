@@ -2,10 +2,11 @@ import Link from "next/link";
 import { ArrowRight, Building2, Landmark, MapPin, TrendingUp, ShieldCheck } from "lucide-react";
 import InvestmentPropertyCard from "@/components/Public/investmentPropertyCard";
 import {
+  getInvestmentProperties,
   getInvestmentOverview,
-  getInvestmentPropertiesSorted,
-  getInvestmentPropertyById,
-} from "@/lib/investmentProperties"; // Updated helper name to be generic
+  matchInvestmentProperty,
+  sortInvestmentProperties,
+} from "@/lib/investmentProperties";
 
 function formatUsd(value) {
   return new Intl.NumberFormat("en-US", {
@@ -24,9 +25,10 @@ export default async function InvestPage({ searchParams }) {
   const params = await searchParams;
   const selectedPropertyId = params?.property;
   const months = params?.months;
-  const selectedProperty = getInvestmentPropertyById(selectedPropertyId);
-  const properties = getInvestmentPropertiesSorted(selectedPropertyId);
-  const overview = getInvestmentOverview();
+  const properties = await getInvestmentProperties();
+  const selectedProperty = matchInvestmentProperty(properties, selectedPropertyId);
+  const sortedProperties = sortInvestmentProperties(properties, selectedProperty?.id || selectedPropertyId);
+  const overview = getInvestmentOverview(properties);
 
   return (
     <main className="min-h-screen bg-white px-4 py-8 text-stone-950 sm:px-6 lg:px-8">
@@ -124,21 +126,26 @@ export default async function InvestPage({ searchParams }) {
             </div>
             <div className="inline-flex items-center gap-2 rounded-full bg-stone-100 px-4 py-2 text-sm font-bold text-stone-600">
               <div className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
-              {properties.length} Markets Live
+              {sortedProperties.length} Markets Live
             </div>
           </div>
 
-          <div className="grid gap-8 lg:grid-cols-2 xl:grid-cols-3">
-            {properties.map((property) => (
-              <InvestmentPropertyCard
-                key={property.id}
-                property={property}
-                highlighted={property.id === selectedPropertyId}
-                months={months}
-                // Ensure your card component uses Rose 500 for its internal buttons!
-              />
-            ))}
-          </div>
+          {sortedProperties.length > 0 ? (
+            <div className="grid gap-8 lg:grid-cols-2 xl:grid-cols-3">
+              {sortedProperties.map((property) => (
+                <InvestmentPropertyCard
+                  key={property.id}
+                  property={property}
+                  highlighted={property.id === selectedProperty?.id}
+                  months={months}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-[2rem] border border-stone-100 bg-stone-50 p-8 text-sm text-stone-600">
+              No live backend properties are published yet.
+            </div>
+          )}
         </section>
       </section>
     </main>

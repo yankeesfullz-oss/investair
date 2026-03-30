@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowRight, UserPlus, WalletCards } from 'lucide-react';
 import { apiFetch } from '@/lib/apiClient';
 import { INVESTOR_TOKEN_KEY } from '@/components/Investor/AuthProvider';
@@ -13,6 +13,11 @@ export default function InvestorSignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirectTo') || '/investor/dashboard';
+  const months = searchParams.get('months');
+
+  const loginHref = `/investor/login?redirectTo=${encodeURIComponent(redirectTo)}${months ? `&months=${encodeURIComponent(months)}` : ''}`;
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -34,7 +39,7 @@ export default function InvestorSignupPage() {
         localStorage.setItem(INVESTOR_TOKEN_KEY, data.token);
       }
 
-      router.replace('/investor/dashboard');
+      router.replace(redirectTo);
     } catch (requestError) {
       setError(requestError.message || 'Unable to create account');
     } finally {
@@ -43,7 +48,7 @@ export default function InvestorSignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,_#fff7fb_0%,_#ffffff_38%,_#f8fbff_100%)] px-4 py-8">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#fff7fb_0%,#ffffff_38%,#f8fbff_100%)] px-4 py-8">
       <div className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-6xl overflow-hidden rounded-[2rem] border border-white/60 bg-white/80 shadow-[0_30px_120px_rgba(15,23,42,0.08)] backdrop-blur-xl lg:grid-cols-[0.94fr_1.06fr]">
         <section className="flex items-center border-b border-slate-100 p-6 sm:p-10 lg:border-b-0 lg:border-r">
           <div className="w-full">
@@ -83,13 +88,13 @@ export default function InvestorSignupPage() {
             </form>
             <p className="mt-6 text-sm text-slate-500">
               Already registered?{' '}
-              <Link href="/investor/login" className="font-medium text-pink-600 hover:text-pink-700">
+              <Link href={loginHref} className="font-medium text-pink-600 hover:text-pink-700">
                 Log in here
               </Link>
             </p>
           </div>
         </section>
-        <section className="flex items-center bg-[linear-gradient(180deg,_rgba(15,23,42,0.98),_rgba(29,78,216,0.88))] p-6 text-white sm:p-10">
+        <section className="flex items-center bg-[linear-gradient(180deg,rgba(15,23,42,0.98),rgba(29,78,216,0.88))] p-6 text-white sm:p-10">
           <div className="w-full space-y-6">
             <p className="inline-flex rounded-full border border-white/10 px-4 py-2 text-xs uppercase tracking-[0.24em] text-pink-200">Instant wallet provisioning</p>
             <h2 className="max-w-lg text-4xl font-semibold leading-tight">Your dashboard is ready the moment your account is created.</h2>

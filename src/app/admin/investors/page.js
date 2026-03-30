@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/apiClient';
 
+const ADMIN_TOKEN_KEY = 'admin_token';
+
 export default function InvestorsPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,14 +14,16 @@ export default function InvestorsPage() {
     let mounted = true;
     async function load() {
       setLoading(true);
+      setError(null);
       try {
-        const data = await apiFetch('/api/users');
+        const data = await apiFetch('/api/users', { tokenStorageKey: ADMIN_TOKEN_KEY });
         if (!mounted) return;
         setUsers(Array.isArray(data) ? data : []);
       } catch (err) {
-        setError(err.message || 'Failed to load users');
+        if (!mounted) return;
+        setError(err.status === 401 ? 'Your admin session expired. Please sign in again.' : (err.message || 'Failed to load users'));
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     }
 

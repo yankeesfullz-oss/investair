@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, Bath, BedDouble, MapPin, ShieldCheck, TrendingUp } from "lucide-react";
-import { parseInvestmentPrice } from "@/lib/investmentProperties";
+import { parseInvestmentPrice } from "@/lib/investmentPropertyUtils";
 
 function formatAnnualizedValue(monthlyPrice) {
   const annualValue = parseInvestmentPrice(monthlyPrice) * 12;
@@ -133,15 +133,17 @@ export default function InvestmentPropertyCard({ property, highlighted = false, 
           >
             View details
           </Link>
-          <Link
-            href={property.sourceUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-5 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-          >
-            Open source listing
-            <ArrowUpRight size={16} />
-          </Link>
+          {property.sourceUrl ? (
+            <Link
+              href={property.sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-5 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+            >
+              Open source listing
+              <ArrowUpRight size={16} />
+            </Link>
+          ) : null}
         </div>
       </div>
     </article>

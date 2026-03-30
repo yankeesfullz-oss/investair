@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowRight, LogIn } from 'lucide-react';
 import { apiFetch } from '@/lib/apiClient';
 import { INVESTOR_TOKEN_KEY } from '@/components/Investor/AuthProvider';
@@ -13,6 +13,11 @@ export default function InvestorLoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirectTo') || '/investor/dashboard';
+  const months = searchParams.get('months');
+
+  const signupHref = `/investor/signup?redirectTo=${encodeURIComponent(redirectTo)}${months ? `&months=${encodeURIComponent(months)}` : ''}`;
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -34,7 +39,7 @@ export default function InvestorLoginPage() {
         localStorage.setItem(INVESTOR_TOKEN_KEY, data.token);
       }
 
-      router.replace('/investor/dashboard');
+      router.replace(redirectTo);
     } catch (requestError) {
       setError(requestError.message || 'Unable to sign in');
     } finally {
@@ -43,9 +48,9 @@ export default function InvestorLoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(251,207,232,0.95),_rgba(255,255,255,1)_48%)] px-4 py-8">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(251,207,232,0.95),rgba(255,255,255,1)_48%)] px-4 py-8">
       <div className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-6xl overflow-hidden rounded-[2rem] border border-white/60 bg-white/80 shadow-[0_30px_120px_rgba(15,23,42,0.08)] backdrop-blur-xl lg:grid-cols-[1.05fr_0.95fr]">
-        <section className="hidden bg-[linear-gradient(180deg,_rgba(15,23,42,0.98),_rgba(17,24,39,0.92))] p-10 text-white lg:flex lg:flex-col lg:justify-between">
+        <section className="hidden bg-[linear-gradient(180deg,rgba(15,23,42,0.98),rgba(17,24,39,0.92))] p-10 text-white lg:flex lg:flex-col lg:justify-between">
           <div>
             <p className="mb-4 inline-flex rounded-full border border-white/10 px-4 py-2 text-xs uppercase tracking-[0.24em] text-pink-200">Investor access</p>
             <h1 className="max-w-md text-4xl font-semibold leading-tight">Fund your account with dedicated BTC and USDT deposit addresses.</h1>
@@ -94,7 +99,7 @@ export default function InvestorLoginPage() {
             </form>
             <p className="mt-6 text-sm text-slate-500">
               New to InvestAir?{' '}
-              <Link href="/investor/signup" className="font-medium text-pink-600 hover:text-pink-700">
+              <Link href={signupHref} className="font-medium text-pink-600 hover:text-pink-700">
                 Create your investor account
               </Link>
             </p>

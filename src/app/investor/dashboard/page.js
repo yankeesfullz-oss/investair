@@ -16,6 +16,11 @@ const walletMeta = {
   USDT: { label: 'Tether', network: 'TRON (TRC20) Mainnet', qrValue: (address) => address },
 };
 
+function formatAssetAmount(value, currency) {
+  const amount = Number(value || 0);
+  return `${amount.toLocaleString('en-US', { maximumFractionDigits: 8 })} ${currency}`;
+}
+
 function formatAddress(address) {
   if (!address) {
     return 'Address pending';
@@ -76,6 +81,16 @@ export default function InvestorDashboardPage() {
   }
 
   const walletSummary = useMemo(() => summarizeWallets(wallets), [wallets]);
+  const walletBalances = useMemo(
+    () => wallets.map((wallet) => ({
+      currency: wallet.currency,
+      label: walletMeta[wallet.currency]?.label || wallet.currency,
+      available: Number(wallet.availableBalance || 0),
+      locked: Number(wallet.lockedBalance || 0),
+      profit: Number(wallet.profitBalance || 0),
+    })),
+    [wallets]
+  );
   const todayLabel = new Date().toISOString().slice(0, 10);
   const todayProfit = useMemo(
     () => payouts.filter((payout) => String(payout.payoutDate || '').slice(0, 10) === todayLabel).reduce((sum, payout) => sum + Number(payout.amount || 0), 0),
@@ -115,6 +130,31 @@ export default function InvestorDashboardPage() {
           <div key={card.label} className="rounded-[1.75rem] border border-white/70 bg-white/85 p-5 shadow-[0_20px_70px_rgba(15,23,42,0.06)]">
             <div className="text-xs uppercase tracking-[0.24em] text-slate-400">{card.label}</div>
             <div className="mt-3 text-3xl font-semibold text-slate-950">{card.value}</div>
+          </div>
+        ))}
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {walletBalances.map((wallet) => (
+          <div key={wallet.currency} className="rounded-[1.75rem] border border-white/70 bg-white/85 p-5 shadow-[0_20px_70px_rgba(15,23,42,0.06)]">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-xs uppercase tracking-[0.24em] text-slate-400">{wallet.currency} balance</div>
+                <div className="mt-2 text-2xl font-semibold text-slate-950">{formatAssetAmount(wallet.available, wallet.currency)}</div>
+                <div className="mt-1 text-sm text-slate-500">{wallet.label}</div>
+              </div>
+              <div className="rounded-full border border-pink-100 bg-pink-50 px-3 py-1 text-[11px] font-medium text-pink-700">Live wallet</div>
+            </div>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              <div className="rounded-2xl bg-slate-50 px-3 py-3">
+                <div className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Locked</div>
+                <div className="mt-1 font-medium text-slate-900">{formatAssetAmount(wallet.locked, wallet.currency)}</div>
+              </div>
+              <div className="rounded-2xl bg-slate-50 px-3 py-3">
+                <div className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Profit</div>
+                <div className="mt-1 font-medium text-slate-900">{formatAssetAmount(wallet.profit, wallet.currency)}</div>
+              </div>
+            </div>
           </div>
         ))}
       </section>
@@ -275,8 +315,9 @@ export default function InvestorDashboardPage() {
                       <div className="mt-3 break-all font-mono text-sm text-slate-900">{wallet.address}</div>
                       <div className="mt-3 flex flex-wrap gap-2">
                         <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-600">Network: {meta.network}</span>
-                        <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-600">Available: {formatCurrency(wallet.availableBalance || 0)}</span>
-                        <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-600">Locked: {formatCurrency(wallet.lockedBalance || 0)}</span>
+                        <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-600">Available: {formatAssetAmount(wallet.availableBalance || 0, wallet.currency)}</span>
+                        <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-600">Locked: {formatAssetAmount(wallet.lockedBalance || 0, wallet.currency)}</span>
+                        <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-600">Profit: {formatAssetAmount(wallet.profitBalance || 0, wallet.currency)}</span>
                         <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-600">Short view: {formatAddress(wallet.address)}</span>
                       </div>
                     </div>

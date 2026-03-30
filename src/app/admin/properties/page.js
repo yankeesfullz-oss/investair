@@ -1,11 +1,24 @@
 "use client";
 
+import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 import { Building2, DollarSign, Layers3, PencilLine, Plus, Trash2 } from 'lucide-react';
 import PropertyEditor from '@/components/Admin/PropertyEditor';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { apiFetch } from '@/lib/apiClient';
 import { formatCurrency } from '@/lib/dashboardFormatting';
+
+function getPropertyPreviewImage(property) {
+  if (property?.coverImage) {
+    return property.coverImage;
+  }
+
+  if (Array.isArray(property?.images) && property.images.length > 0) {
+    return property.images[0];
+  }
+
+  return '';
+}
 
 export default function AdminPropertiesPage() {
   const [properties, setProperties] = useState([]);
@@ -170,8 +183,27 @@ export default function AdminPropertiesPage() {
         <section className="grid gap-5 xl:grid-cols-2">
           {properties.map((property) => {
             const propertyId = property._id || property.id;
+            const previewImage = getPropertyPreviewImage(property);
+
             return (
-              <article key={propertyId} className="rounded-[2rem] border border-white/70 bg-white/85 p-6 shadow-[0_20px_80px_rgba(15,23,42,0.07)]">
+              <article key={propertyId} className="overflow-hidden rounded-[2rem] border border-white/70 bg-white/85 shadow-[0_20px_80px_rgba(15,23,42,0.07)]">
+                <div className="relative aspect-2/1 w-full overflow-hidden bg-slate-100">
+                  {previewImage ? (
+                    <Image
+                      src={previewImage}
+                      alt={property.name}
+                      fill
+                      sizes="(max-width: 1280px) 100vw, 50vw"
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,#f8fafc_0%,#e2e8f0_100%)] text-sm font-medium text-slate-500">
+                      No property image
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-6">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <div className="inline-flex items-center gap-2 rounded-full bg-pink-50 px-3 py-1 text-xs font-medium text-pink-700">
@@ -219,6 +251,7 @@ export default function AdminPropertiesPage() {
                     <Trash2 className="h-4 w-4" />
                     Delete
                   </button>
+                </div>
                 </div>
               </article>
             );
