@@ -1,0 +1,40 @@
+{
+  "summary": {
+    "sourcePath": "C:\\Users\\HP\\Desktop\\investair\\investair\\src\\lib\\data",
+    "rawBackupPath": "C:\\Users\\HP\\Desktop\\investair\\investair\\src\\lib\\data.raw.json",
+    "filteredPath": "C:\\Users\\HP\\Desktop\\investair\\investair\\src\\lib\\data.filtered.json",
+    "validationPath": "C:\\Users\\HP\\Desktop\\investair\\investair\\src\\lib\\data.validation.json",
+    "rawRecordCount": 190,
+    "filteredPropertyCount": 85,
+    "issueCount": 4,
+    "errorCount": 0,
+    "warningCount": 4,
+    "generatedAt": "2026-03-25T20:24:26.720Z"
+  },
+  "issues": [
+    {
+      "severity": "warning",
+      "id": "the-loop-on-greenfield-oak-park",
+      "rule": "suspicious-price",
+      "message": "Monthly price looks suspiciously low: $250."
+    },
+    {
+      "severity": "warning",
+      "id": "centerra-pointe-ann-arbor",
+      "rule": "short-description",
+      "message": "Property description is short or missing."
+    },
+    {
+      "severity": "warning",
+      "id": "centerra-pointe-ann-arbor",
+      "rule": "suspicious-price",
+      "message": "Monthly price looks suspiciously low: $200."
+    },
+    {
+      "severity": "warning",
+      "id": "westbury-village-townhomes-auburn-hills",
+      "rule": "suspicious-price",
+      "message": "Monthly price looks suspiciously low: $250."
+    }
+  ]
+}

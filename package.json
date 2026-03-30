@@ -1,0 +1,36 @@
+{
+  "name": "investair",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "properties:filter": "node scripts/filterMichiganPropertyData.mjs",
+    "properties:build": "node scripts/generateMichiganInvestmentProperties.mjs"
+  },
+  "dependencies": {
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "currency-codes": "^2.2.0",
+    "framer-motion": "^12.38.0",
+    "i18n-iso-countries": "^7.14.0",
+    "lucide-react": "^0.577.0",
+    "next": "16.1.6",
+    "qrcode.react": "^4.2.0",
+    "radix-ui": "^1.4.3",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "shadcn": "^4.0.6",
+    "tailwind-merge": "^3.5.0",
+    "tw-animate-css": "^1.4.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "babel-plugin-react-compiler": "1.0.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "tailwindcss": "^4"
+  }
+}

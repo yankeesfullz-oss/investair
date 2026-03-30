@@ -1,0 +1,38 @@
+import { NextResponse } from "next/server";
+import { normalizeCountryCode } from "./src/lib/countryConfig";
+
+const COUNTRY_COOKIE = "user-country";
+const FALLBACK_COUNTRY = "US";
+
+function detectCountry(request) {
+  const headerCountry =
+    request.headers.get("x-vercel-ip-country") ||
+    request.headers.get("cf-ipcountry") ||
+    request.headers.get("x-country-code");
+
+  return (
+    normalizeCountryCode(request.geo?.country) ||
+    normalizeCountryCode(headerCountry) ||
+    FALLBACK_COUNTRY
+  );
+}
+
+export function middleware(request) {
+  const response = NextResponse.next();
+  const country = detectCountry(request);
+
+  if (request.cookies.get(COUNTRY_COOKIE)?.value !== country) {
+    response.cookies.set(COUNTRY_COOKIE, country, {
+      httpOnly: false,
+      maxAge: 60 * 60 * 24 * 30,
+      path: "/",
+      sameSite: "lax",
+    });
+  }
+
+  return response;
+}
+
+export const config = {
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)"],
+};
