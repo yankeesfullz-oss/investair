@@ -18,10 +18,19 @@ import {
   Waves,
   Wind,
 } from "lucide-react";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { getInvestmentProperties, matchInvestmentProperty, parseInvestmentPrice } from "@/lib/investmentProperties";
 import PropertyImageCarousel from "@/components/Public/propertyImageCarousel";
 import InvestmentCheckoutCard from "@/components/Public/InvestmentCheckoutCard";
+import {
+  absoluteUrl,
+  getCanonicalPropertySegment,
+  getPropertyPath,
+  getSiteUrl,
+  PROPERTY_REVALIDATE_SECONDS,
+} from "@/lib/site";
+
+export const revalidate = PROPERTY_REVALIDATE_SECONDS;
 
 function formatUsd(value) {
   return new Intl.NumberFormat("en-US", {
@@ -57,6 +66,42 @@ function getAmenityIcon(amenity) {
   return Home;
 }
 
+function buildSearchParamsQuery(searchParams) {
+  const queryEntries = Object.entries(searchParams || {}).flatMap(([key, value]) => {
+    if (value == null || value === "") {
+      return [];
+    }
+
+    if (Array.isArray(value)) {
+      return value.map((entry) => [key, String(entry)]);
+    }
+
+    return [[key, String(value)]];
+  });
+
+  return new URLSearchParams(queryEntries).toString();
+}
+
+function buildPropertyMetadata(property) {
+  const canonicalPath = getPropertyPath(property);
+  const canonicalUrl = absoluteUrl(canonicalPath);
+  const imageUrl = Array.isArray(property.images) && property.images.length > 0
+    ? property.images[0]
+    : property.image || property.coverImage || "";
+  const propertyAddress = property.address || [property.addressLine1, property.city, property.state].filter(Boolean).join(", ");
+  const monthlyEntry = property.investmentPricePerMonth || "$0";
+  const occupancy = Number(property.occupancyScore || 0);
+
+  return {
+    canonicalPath,
+    canonicalUrl,
+    propertyAddress,
+    imageUrl,
+    title: `${property.name} Investment Opportunity at ${propertyAddress || `${property.city}, ${property.state}`}`,
+    description: `${propertyAddress || `${property.city}, ${property.state}`}. Explore this InvestAir property opportunity with monthly entry from ${monthlyEntry}, projected occupancy around ${occupancy}%, and performance-based short-stay investment positioning.`,
+  };
+}
+
 export async function generateMetadata({ params }) {
   const resolvedParams = await params;
   const properties = await getInvestmentProperties();
@@ -66,21 +111,38 @@ export async function generateMetadata({ params }) {
     return {
       title: "Property Not Found",
       description: "The requested investment property or apartment for rent could not be found.",
+      robots: {
+        index: false,
+        follow: false,
+      },
     };
   }
 
-  const imageUrl = Array.isArray(property.images) && property.images.length > 0 
-    ? property.images[0] 
-    : property.image || property.coverImage || "";
+  const seo = buildPropertyMetadata(property);
 
   return {
-    title: `${property.name} - Apartments for Rent in ${property.city}, ${property.state}`,
-    description: `Explore ${property.name} in ${property.city}, ${property.state}. Monthly investment pricing from ${property.investmentPricePerMonth}. Active nationwide rentals and investments.`,
-    keywords: [property.city, property.state, "apartments for rent", "investment property", property.name],
+    title: seo.title,
+    description: seo.description,
+    alternates: {
+      canonical: seo.canonicalPath,
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
+    keywords: [property.city, property.state, property.address, "short-term rental investment", "investment property", property.name].filter(Boolean),
     openGraph: {
-      title: `${property.name} - Apartments for Rent`,
-      description: `Invest or rent at ${property.name}, located in ${property.city}, ${property.state}.`,
-      images: imageUrl ? [{ url: imageUrl }] : [],
+      title: seo.title,
+      description: seo.description,
+      url: seo.canonicalUrl,
+      images: seo.imageUrl ? [{ url: absoluteUrl(seo.imageUrl), alt: property.name }] : [],
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: seo.title,
+      description: seo.description,
+      images: seo.imageUrl ? [absoluteUrl(seo.imageUrl)] : [],
     },
   };
 }
@@ -95,6 +157,14 @@ export default async function InvestmentPropertyDetailPage({ params, searchParam
     notFound();
   }
 
+  const canonicalSegment = getCanonicalPropertySegment(property);
+  const canonicalPath = getPropertyPath(property);
+  const queryString = buildSearchParamsQuery(resolvedSearchParams);
+
+  if (canonicalSegment && resolvedParams.id !== canonicalSegment) {
+    permanentRedirect(queryString ? `${canonicalPath}?${queryString}` : canonicalPath);
+  }
+
   const months = resolvedSearchParams?.months;
   const monthlyPrice = parseInvestmentPrice(property.investmentPricePerMonth);
   const annualizedPrice = monthlyPrice * 12;
@@ -107,9 +177,88 @@ export default async function InvestmentPropertyDetailPage({ params, searchParam
   const floorPlans = Array.isArray(property.floorPlans) ? property.floorPlans : [];
   const selectedDuration = months ? Number(months) : null;
   const projectedSelectedPayout = selectedDuration ? property.currentDailyPayoutAmount * 30 * selectedDuration : null;
+  const propertyAddress = property.address || [property.addressLine1, property.city, property.state].filter(Boolean).join(", ");
+  const canonicalUrl = absoluteUrl(canonicalPath);
+  const propertyStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "RealEstateListing",
+    name: property.name,
+    url: canonicalUrl,
+    mainEntityOfPage: canonicalUrl,
+    description: property.investorSummary || property.summary || property.description,
+    image: propertyImages.map((image) => absoluteUrl(image)),
+    dateModified: property.updatedAt || property.scrapedAt || undefined,
+    provider: {
+      "@type": "Organization",
+      name: "InvestAir",
+      url: getSiteUrl(),
+    },
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: property.addressLine1 || propertyAddress,
+      addressLocality: property.city || undefined,
+      addressRegion: property.state || undefined,
+      postalCode: property.zip || property.postalCode || undefined,
+      addressCountry: property.country || "US",
+    },
+    offers: {
+      "@type": "Offer",
+      priceCurrency: "USD",
+      price: monthlyPrice,
+      url: canonicalUrl,
+      availability: String(property.availability || "").toLowerCase().includes("sold")
+        ? "https://schema.org/SoldOut"
+        : "https://schema.org/InStock",
+    },
+    additionalProperty: [
+      {
+        "@type": "PropertyValue",
+        name: "Occupancy score",
+        value: `${property.occupancyScore || 0}%`,
+      },
+      {
+        "@type": "PropertyValue",
+        name: "Allowed durations",
+        value: Array.isArray(property.allowedDurations) ? property.allowedDurations.join(", ") : "",
+      },
+      {
+        "@type": "PropertyValue",
+        name: "Investment entry price",
+        value: property.investmentPricePerMonth,
+      },
+    ],
+  };
+  const breadcrumbStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: absoluteUrl("/"),
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Invest",
+        item: absoluteUrl("/invest"),
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: property.name,
+        item: canonicalUrl,
+      },
+    ],
+  };
 
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#fffdf8_0%,#ffffff_25%,#f8fafc_100%)] px-4 py-6 sm:px-6 lg:px-8 lg:py-10 text-slate-900">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify([breadcrumbStructuredData, propertyStructuredData]) }}
+      />
       <section className="mx-auto max-w-7xl space-y-6 lg:space-y-8">
         <Link
           href={months ? `/invest?property=${property.id}&months=${months}` : "/invest"}

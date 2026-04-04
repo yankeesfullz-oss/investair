@@ -7,6 +7,7 @@ import {
   matchInvestmentProperty,
   sortInvestmentProperties,
 } from "@/lib/investmentProperties";
+import { getPropertyPath } from "@/lib/site";
 
 function formatUsd(value) {
   return new Intl.NumberFormat("en-US", {
@@ -18,7 +19,10 @@ function formatUsd(value) {
 
 export const metadata = {
   title: "Investment Inventory | Investair",
-  description: "Secure high-yield short-term rental contracts across the United States.",
+  description: "Browse InvestAir's short-term rental opportunities, compare projected performance, and reserve structured rental-income periods.",
+  alternates: {
+    canonical: "/invest",
+  },
 };
 
 export default async function InvestPage({ searchParams }) {
@@ -40,15 +44,15 @@ export default async function InvestPage({ searchParams }) {
             <div className="max-w-3xl space-y-5">
               <p className="inline-flex items-center gap-2 rounded-full bg-rose-50 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-rose-600">
                 <TrendingUp size={14} />
-                National Investment Inventory
+                Short-Stay Opportunity Inventory
               </p>
               <h1 className="text-4xl font-bold tracking-tight text-stone-950 sm:text-6xl">
-                High-yield property contracts, <span className="text-rose-500">optimized for Airbnb.</span>
+                Reserve rental-income periods in the <span className="text-rose-500">short-stay economy.</span>
               </h1>
               <p className="max-w-2xl text-lg leading-relaxed text-stone-600">
-                Secure exclusive rental arbitrage contracts on premium properties across the USA. 
-                Capitalize on the short-term stay market and generate consistent profits from 
-                daily rental premiums without the overhead of ownership.
+                Review curated guest-ready properties, compare projected revenue conditions,
+                and choose a supported investment duration based on your funding plan and risk tolerance.
+                Opportunities are performance-based and tied to real booking activity.
               </p>
             </div>
 
@@ -66,8 +70,8 @@ export default async function InvestPage({ searchParams }) {
             {[
               { label: "Active Listings", val: overview.propertyCount, icon: <Building2 className="text-rose-500" size={20}/> },
               { label: "US Markets", val: overview.cities, icon: <MapPin className="text-rose-500" size={20}/> },
-              { label: "Monthly Entry", val: formatUsd(overview.lowestMonthlyPrice), icon: <ShieldCheck className="text-rose-500" size={20}/> },
-              { label: "Max Daily Potential", val: formatUsd(overview.highestMonthlyPrice / 30), icon: <TrendingUp className="text-rose-500" size={20}/> },
+              { label: "Estimated Monthly Entry", val: formatUsd(overview.lowestMonthlyPrice), icon: <ShieldCheck className="text-rose-500" size={20}/> },
+              { label: "Illustrative Daily Upside", val: formatUsd(overview.highestMonthlyPrice / 30), icon: <TrendingUp className="text-rose-500" size={20}/> },
             ].map((stat, i) => (
               <div key={i} className="group rounded-3xl bg-white p-6 shadow-sm ring-1 ring-stone-100 transition-hover hover:shadow-md">
                 <div className="mb-4 flex items-center justify-between">
@@ -96,7 +100,7 @@ export default async function InvestPage({ searchParams }) {
                   </span>
                   <span className="flex items-center gap-2">
                     <Landmark size={18} className="text-rose-200" />
-                    {selectedProperty.investmentPricePerMonth} contract
+                    {selectedProperty.investmentPricePerMonth} monthly entry
                   </span>
                   {months && (
                     <span className="flex items-center gap-2">
@@ -108,25 +112,47 @@ export default async function InvestPage({ searchParams }) {
               </div>
 
               <Link
-                href={months ? `/invest/${selectedProperty.id}?months=${months}` : `/invest/${selectedProperty.id}`}
+                href={months ? `${getPropertyPath(selectedProperty)}?months=${months}` : getPropertyPath(selectedProperty)}
                 className="inline-flex items-center justify-center rounded-full bg-white px-8 py-4 text-base font-bold text-rose-500 transition hover:bg-stone-50 active:scale-95 shadow-lg"
               >
-                Secure This Contract
+                Review This Opportunity
               </Link>
             </div>
           </section>
         )}
+
+        <section className="grid gap-4 lg:grid-cols-3">
+          {[
+            {
+              title: "Structured durations",
+              description: "Select supported time periods such as 3, 6, or 12 months based on the property setup and your preferred holding window.",
+            },
+            {
+              title: "Performance-based returns",
+              description: "Projected figures are estimates only and can move with occupancy, nightly pricing, operating costs, and local seasonality.",
+            },
+            {
+              title: "Operator-light access",
+              description: "Participate in short-term rental economics without directly managing furnishing, guest operations, cleaning, or calendar logistics.",
+            },
+          ].map((item) => (
+            <article key={item.title} className="rounded-[2rem] border border-stone-100 bg-stone-50 p-6 shadow-sm">
+              <h2 className="text-xl font-bold tracking-tight text-stone-950">{item.title}</h2>
+              <p className="mt-3 text-sm leading-7 text-stone-600">{item.description}</p>
+            </article>
+          ))}
+        </section>
 
         {/* INVENTORY LIST */}
         <section className="space-y-6">
           <div className="flex flex-col gap-3 border-b border-stone-100 pb-6 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className="text-3xl font-bold text-stone-950 tracking-tight">Available US Opportunities</h2>
-              <p className="mt-1 text-stone-500">Live contracts ready for immediate short-term rental operation.</p>
+              <p className="mt-1 text-stone-500">Curated listings with duration-based access to projected short-stay rental cashflow.</p>
             </div>
             <div className="inline-flex items-center gap-2 rounded-full bg-stone-100 px-4 py-2 text-sm font-bold text-stone-600">
               <div className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
-              {sortedProperties.length} Markets Live
+              {sortedProperties.length} Opportunities Live
             </div>
           </div>
 
@@ -143,7 +169,7 @@ export default async function InvestPage({ searchParams }) {
             </div>
           ) : (
             <div className="rounded-[2rem] border border-stone-100 bg-stone-50 p-8 text-sm text-stone-600">
-              No live backend properties are published yet.
+              No live investment opportunities are published yet.
             </div>
           )}
         </section>

@@ -1,5 +1,7 @@
+import { getSiteUrl } from "@/lib/site";
+
 export default function robots() {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://investair.example.com";
+  const baseUrl = getSiteUrl();
 
   return {
     rules: {

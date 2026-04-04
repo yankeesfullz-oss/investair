@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useSearchExperience } from "./searchExperienceProvider";
 import { apiFetch } from "@/lib/apiClient";
 import { filterPublicInvestmentProperties } from "@/lib/investmentPropertyUtils";
+import { getCanonicalPropertySegment } from "@/lib/site";
 
 const MONTH_OPTIONS = [3, 6, 9, 12, 18, 24];
 
@@ -91,7 +92,7 @@ export default function SearchBar() {
     };
     const params = new URLSearchParams({
       mode,
-      property: selectedProperty.id,
+      property: getCanonicalPropertySegment(selectedProperty),
       city: selectedProperty.city,
       state: selectedProperty.state,
     });

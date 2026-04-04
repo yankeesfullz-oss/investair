@@ -7,21 +7,26 @@ import { useSearchExperience } from "./searchExperienceProvider";
 
 const HERO_COPY = {
   buy: {
-    badge: "Find high-conviction property markets",
-    title: "Buy residential and commercial property with cleaner discovery.",
+    badge: "Discover guest-ready property markets",
+    title: "Explore short-stay real estate opportunities with clearer investor context.",
     description:
-      "Search premium locations, compare investor-friendly markets, and move from discovery to opportunity without a bloated booking flow.",
+      "Search demand-led locations, compare guest-ready assets, and understand how each market fits a modern short-term rental strategy.",
     primaryHref: "/investor/signup",
-    primaryLabel: "Start Buying",
+    primaryLabel: "Explore Opportunities",
   },
   invest: {
-    badge: "Structured investment opportunities",
-    title: "Invest by city and duration with a tighter decision flow.",
+    badge: "Structured short-stay investment access",
+    title: "Reserve income periods on guest-ready properties.",
     description:
-      "Pick a location, set your preferred months, and surface opportunities that align with your time horizon and funding plan.",
+      "Browse curated properties, choose a supported duration, and participate in rental cashflow tied to actual booking performance and operating results.",
     primaryHref: "/investor/signup",
     primaryLabel: "Start Investing",
   },
+};
+
+const heroBackground = {
+  background:
+    "radial-gradient(circle at top left, rgba(251,207,232,0.55), transparent 32%), radial-gradient(circle at top right, rgba(191,219,254,0.5), transparent 28%), linear-gradient(180deg, #fff8fb 0%, #ffffff 42%, #f8fafc 100%)",
 };
 
 export default function Hero() {
@@ -36,7 +41,7 @@ export default function Hero() {
   const copy = HERO_COPY[mode] || HERO_COPY.buy;
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(251,207,232,0.55),_transparent_32%),radial-gradient(circle_at_top_right,_rgba(191,219,254,0.5),_transparent_28%),linear-gradient(180deg,_#fff8fb_0%,_#ffffff_42%,_#f8fafc_100%)] px-4 py-10 text-slate-900 sm:px-6 md:px-10 md:py-14">
+    <main style={heroBackground} className="min-h-screen px-4 py-10 text-slate-900 sm:px-6 md:px-10 md:py-14">
       <section className="mx-auto max-w-7xl rounded-[2.5rem] border border-white/70 bg-white/75 px-5 py-8 shadow-[0_30px_120px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:px-8 md:px-12 md:py-12">
         <div className={`max-w-3xl transition duration-300 ${isReady ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"}`}>
           <p className="mb-4 inline-flex rounded-full border border-rose-100 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-600">
@@ -58,9 +63,6 @@ export default function Hero() {
           </Link>
           <Link href="/investor/login" className="rounded-2xl border border-slate-200 px-6 py-3 text-center text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">
             Investor Login
-          </Link>
-          <Link href="/admin/login" className="rounded-2xl border border-rose-100 bg-rose-50 px-6 py-3 text-center text-rose-700 transition hover:bg-rose-100">
-            Admin Login
           </Link>
         </div>
       </section>

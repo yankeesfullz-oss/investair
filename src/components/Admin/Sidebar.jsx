@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Building2, CircleDollarSign, Landmark, LayoutDashboard, Users, WalletCards } from 'lucide-react';
+import { Building2, CircleDollarSign, Landmark, LayoutDashboard, MessagesSquare, Users, WalletCards } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function AdminSidebar() {
@@ -13,6 +13,7 @@ export default function AdminSidebar() {
     { href: '/admin/deposits', label: 'Deposits', icon: Landmark },
     { href: '/admin/withdrawals', label: 'Withdrawals', icon: CircleDollarSign },
     { href: '/admin/investors', label: 'Investors', icon: Users },
+    { href: '/admin/chatbots', label: 'Chatbots', icon: MessagesSquare },
   ];
 
   return (

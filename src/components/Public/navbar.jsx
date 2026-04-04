@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -36,7 +36,6 @@ export default function Navbar() {
 		: pathname?.startsWith("/properties")
 			? "buy"
 			: mode;
-	const isBuyActive = activeMode === "buy";
 	const isInvestActive = activeMode === "invest";
 
 	useEffect(() => {
@@ -49,8 +48,8 @@ export default function Navbar() {
 
 	return (
 		<>
-			<header className="border-b border-neutral-200">
-				<div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between">
+			<header className="border-b border-neutral-200 bg-white/95 backdrop-blur">
+				<div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-3 px-4 py-3 sm:px-6 md:grid-cols-[1fr_auto_1fr] lg:px-8">
 					<div className="flex items-center justify-between gap-4 md:justify-start">
 						<Link href="/" className="no-underline">
 							<Image
@@ -59,7 +58,7 @@ export default function Navbar() {
 								width={160}
 								height={48}
 								priority
-								className="h-9 w-auto md:h-15"
+								className="h-9 w-auto md:h-12 md:w-auto"
 							/>
 						</Link>
 
@@ -74,32 +73,20 @@ export default function Navbar() {
 						</div>
 					</div>
 
-					<nav className="relative grid w-full grid-cols-2 overflow-hidden rounded-full bg-neutral-100 p-1 shadow-inner md:mx-auto md:max-w-md md:flex-1 md:w-auto">
-						<div
-							aria-hidden="true"
-							className={`absolute top-1 bottom-1 w-[calc(50%-0.25rem)] rounded-full bg-white shadow-sm transition-transform duration-300 ease-out ${
-								isInvestActive ? "translate-x-full" : "translate-x-0"
-							}`}
-						/>
-						<button
-							type="button"
-							onClick={() => setMode("buy")}
-							className={`relative z-10 min-w-0 rounded-full px-4 py-2 text-center text-sm font-medium transition-colors duration-300 sm:px-5 ${isBuyActive ? "text-neutral-950" : "text-neutral-600 hover:text-neutral-950"}`}
-							aria-pressed={isBuyActive}
-						>
-							Buy Property
-						</button>
-						<button
-							type="button"
+					<nav className="flex justify-center md:justify-center">
+						<Link
+							href="/invest"
 							onClick={() => setMode("invest")}
-							className={`relative z-10 min-w-0 rounded-full px-4 py-2 text-center text-sm font-medium transition-colors duration-300 sm:px-5 ${isInvestActive ? "text-neutral-950" : "text-neutral-600 hover:text-neutral-950"}`}
+							className={`inline-flex min-w-44 items-center justify-center rounded-full border-2 border-black px-6 py-3 text-center text-sm font-extrabold uppercase tracking-[0.18em] text-white shadow-[0_10px_30px_rgba(244,63,94,0.24)] transition hover:-translate-y-0.5 hover:bg-rose-600 ${
+								isInvestActive ? "bg-rose-600" : "bg-rose-500"
+							}`}
 							aria-pressed={isInvestActive}
 						>
-							Invest
-						</button>
+							Invest Now
+						</Link>
 					</nav>
 
-					<div className="hidden items-center gap-3 md:flex">
+					<div className="hidden items-center justify-end gap-3 md:flex">
 						<button
 							aria-label="Change language and currency"
 							onClick={() => setOpen(true)}

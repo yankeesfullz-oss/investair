@@ -1,6 +1,6 @@
 let cachedBackendUrl = null;
 
-async function getBackendUrl() {
+export async function getBackendUrl() {
   if (cachedBackendUrl) return cachedBackendUrl;
   try {
     const res = await fetch('/api/config');
@@ -21,8 +21,9 @@ export async function apiFetch(path, options = {}) {
     token = localStorage.getItem(tokenStorageKey);
   }
 
+  const isFormData = typeof FormData !== 'undefined' && restOptions.body instanceof FormData;
   const headers = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(optionHeaders || {}),
   };
 

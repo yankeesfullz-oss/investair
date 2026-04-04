@@ -166,13 +166,25 @@ function getFundingStatus(fundedPercentage) {
   return "open";
 }
 
+const MIN_ALLOWED_DURATION_MONTHS = 1;
+const MAX_ALLOWED_DURATION_MONTHS = 24;
+const DEFAULT_ALLOWED_DURATIONS = [1, 3, 6, 12];
+
 function normalizeAllowedDurations(record) {
   const durations = Array.isArray(record.allowedDurations)
     ? record.allowedDurations
     : [record.minimumInvestmentMonths, record.maximumInvestmentMonths].filter(Boolean);
 
-  const cleaned = [...new Set(durations.map(Number).filter((value) => Number.isFinite(value) && value > 0))].sort((a, b) => a - b);
-  return cleaned.length > 0 ? cleaned : [2, 3, 6, 12];
+  const cleaned = [...new Set(
+    durations
+      .map(Number)
+      .filter(
+        (value) => Number.isInteger(value)
+          && value >= MIN_ALLOWED_DURATION_MONTHS
+          && value <= MAX_ALLOWED_DURATION_MONTHS
+      )
+  )].sort((a, b) => a - b);
+  return cleaned.length > 0 ? cleaned : DEFAULT_ALLOWED_DURATIONS;
 }
 
 export function parseInvestmentPrice(value) {
@@ -230,7 +242,7 @@ export function normalizeBackendProperty(record) {
     demandScore,
     fundedPercentage,
     totalInvestors: Number(record.totalInvestors || 0),
-    minimumInvestmentMonths: Number(record.minimumInvestmentMonths || allowedDurations[0] || 2),
+    minimumInvestmentMonths: Number(record.minimumInvestmentMonths || allowedDurations[0] || 1),
     allowedDurations,
     riskLevel: normalizeWhitespace(record.riskLevel || "moderate") || "moderate",
     investorHeadline,
@@ -332,4 +344,32 @@ export function getInvestmentOverview(properties) {
     lowestMonthlyPrice: monthlyPrices.length > 0 ? Math.min(...monthlyPrices) : 0,
     highestMonthlyPrice: monthlyPrices.length > 0 ? Math.max(...monthlyPrices) : 0,
   };
+}
+
+export function getBestDealProperties(properties, options = {}) {
+  const {
+    minimumOccupancyScore = 90,
+    maximumMonthlyEntryAmount = 500,
+    limit,
+  } = options;
+
+  const filteredProperties = (Array.isArray(properties) ? properties : [])
+    .filter((property) => {
+      return Number(property?.occupancyScore || 0) >= minimumOccupancyScore
+        && Number(property?.monthlyInvestmentAmount || 0) <= maximumMonthlyEntryAmount;
+    })
+    .sort((first, second) => {
+      const monthlyDifference = Number(first.monthlyInvestmentAmount || 0) - Number(second.monthlyInvestmentAmount || 0);
+      if (monthlyDifference !== 0) {
+        return monthlyDifference;
+      }
+
+      return Number(second.occupancyScore || 0) - Number(first.occupancyScore || 0);
+    });
+
+  if (Number.isInteger(limit) && limit > 0) {
+    return filteredProperties.slice(0, limit);
+  }
+
+  return filteredProperties;
 }

@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, Bath, BedDouble, MapPin, ShieldCheck, TrendingUp } from "lucide-react";
 import { parseInvestmentPrice } from "@/lib/investmentPropertyUtils";
+import { getPropertyPath } from "@/lib/site";
 
 function formatAnnualizedValue(monthlyPrice) {
   const annualValue = parseInvestmentPrice(monthlyPrice) * 12;
@@ -22,9 +23,10 @@ function formatUsd(value) {
 }
 
 export default function InvestmentPropertyCard({ property, highlighted = false, months }) {
+  const canonicalPropertyPath = getPropertyPath(property);
   const detailHref = months
-    ? `/invest/${property.id}?months=${months}`
-    : `/invest/${property.id}`;
+    ? `${canonicalPropertyPath}?months=${months}`
+    : canonicalPropertyPath;
   const propertyImages = Array.isArray(property.images) && property.images.length > 0
     ? property.images
     : [property.image].filter(Boolean);

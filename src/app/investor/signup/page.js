@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -8,6 +9,14 @@ import { apiFetch } from '@/lib/apiClient';
 import { INVESTOR_TOKEN_KEY } from '@/components/Investor/AuthProvider';
 
 export default function InvestorSignupPage() {
+  return (
+    <Suspense fallback={null}>
+      <InvestorSignupPageContent />
+    </Suspense>
+  );
+}
+
+function InvestorSignupPageContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);

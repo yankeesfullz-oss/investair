@@ -21,8 +21,9 @@ const MOONPAY_LINKS = {
   ETH: 'https://www.moonpay.com/buy/eth',
   USDT: 'https://www.moonpay.com/buy/usdt',
 };
-
-const SUPPORTED_DURATIONS = [2, 3, 6, 9, 12, 18, 24];
+const MIN_ALLOWED_DURATION_MONTHS = 1;
+const MAX_ALLOWED_DURATION_MONTHS = 24;
+const DEFAULT_ALLOWED_DURATIONS = [1, 3, 6, 12];
 
 function formatUsd(value) {
   return new Intl.NumberFormat('en-US', {
@@ -47,10 +48,16 @@ function normalizeSlug(value) {
 function buildAvailableDurations(property) {
   const sourceDurations = Array.isArray(property.allowedDurations) && property.allowedDurations.length > 0
     ? property.allowedDurations.map(Number)
-    : [Number(property.minimumInvestmentMonths || 2)];
+    : [Number(property.minimumInvestmentMonths || DEFAULT_ALLOWED_DURATIONS[0])];
 
-  const deduped = [...new Set(sourceDurations.filter((duration) => SUPPORTED_DURATIONS.includes(duration)))];
-  return deduped.length > 0 ? deduped : [2, 3, 6, 12, 18, 24];
+  const deduped = [...new Set(
+    sourceDurations.filter(
+      (duration) => Number.isInteger(duration)
+        && duration >= MIN_ALLOWED_DURATION_MONTHS
+        && duration <= MAX_ALLOWED_DURATION_MONTHS
+    )
+  )].sort((left, right) => left - right);
+  return deduped.length > 0 ? deduped : DEFAULT_ALLOWED_DURATIONS;
 }
 
 function getMatchingBackendProperty(properties, property) {
@@ -294,7 +301,7 @@ export default function InvestmentCheckoutCard({ property, monthlyPrice, initial
 
               <div className="p-5 sm:p-6 lg:p-8 space-y-5 sm:space-y-6">
                 {checkingSession ? (
-                  <div className="flex min-h-[300px] items-center justify-center text-slate-500">
+                  <div className="flex min-h-75 items-center justify-center text-slate-500">
                     <LoaderCircle className="mr-3 h-5 w-5 animate-spin" />
                     Loading checkout...
                   </div>
@@ -339,7 +346,7 @@ export default function InvestmentCheckoutCard({ property, monthlyPrice, initial
                           <div className="flex items-start justify-between gap-3">
                             <div>
                               <div className="text-[10px] sm:text-[11px] uppercase tracking-[0.2em] text-slate-400">Investor session</div>
-                              <div className="mt-1 sm:mt-2 text-base sm:text-lg font-semibold text-slate-950 truncate max-w-[180px] sm:max-w-xs">{session.user.fullName || session.user.email}</div>
+                              <div className="mt-1 sm:mt-2 max-w-45 truncate text-base font-semibold text-slate-950 sm:max-w-xs sm:text-lg">{session.user.fullName || session.user.email}</div>
                               <div className="mt-1 text-xs sm:text-sm text-slate-500">Currency required: {investmentCurrency}</div>
                             </div>
                             <div className="inline-flex shrink-0 items-center gap-1.5 sm:gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 sm:px-3 sm:py-1 text-[10px] sm:text-xs font-medium text-emerald-700">

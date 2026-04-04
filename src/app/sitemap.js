@@ -1,15 +1,18 @@
 import { getInvestmentProperties } from "@/lib/investmentProperties";
+import { absoluteUrl, getPropertyPath, getSiteUrl, PROPERTY_REVALIDATE_SECONDS } from "@/lib/site";
+
+export const revalidate = PROPERTY_REVALIDATE_SECONDS;
 
 export default async function sitemap() {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://investair.example.com";
+  const baseUrl = getSiteUrl();
 
   // Get dynamic listings from the backend/database
   const properties = await getInvestmentProperties();
 
   // Map backend properties into sitemap objects
   const propertyEntries = properties.map((property) => ({
-    url: `${baseUrl}/invest/${property.id}`,
-    lastModified: new Date(property.updatedAt || new Date()), // ideally fallback to current date or actual updatedAt
+    url: absoluteUrl(getPropertyPath(property)),
+    lastModified: new Date(property.updatedAt || property.createdAt || Date.now()),
     changeFrequency: "daily",
     priority: 0.8,
   }));
@@ -27,6 +30,24 @@ export default async function sitemap() {
       lastModified: new Date(),
       changeFrequency: "daily",
       priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/about`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/terms`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.5,
+    },
+    {
+      url: `${baseUrl}/privacy`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.5,
     },
   ];
 

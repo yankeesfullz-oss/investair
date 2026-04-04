@@ -3,6 +3,14 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
+const MIN_DURATION_MONTHS = 1;
+const MAX_DURATION_MONTHS = 24;
+const DEFAULT_ALLOWED_DURATIONS = [1, 3, 6, 12];
+const DURATION_OPTIONS = Array.from(
+  { length: MAX_DURATION_MONTHS - MIN_DURATION_MONTHS + 1 },
+  (_, index) => MIN_DURATION_MONTHS + index
+);
+
 const initialState = {
   name: "",
   location: "",
@@ -33,9 +41,9 @@ const initialState = {
   currentDailyPayoutAmount: "",
   projectedMonthlyPayoutAmount: "",
   projectedAnnualPayoutAmount: "",
-  minimumInvestmentMonths: "2",
-  maximumInvestmentMonths: "",
-  allowedDurations: "2,3,6,12",
+  minimumInvestmentMonths: String(DEFAULT_ALLOWED_DURATIONS[0]),
+  maximumInvestmentMonths: String(DEFAULT_ALLOWED_DURATIONS[DEFAULT_ALLOWED_DURATIONS.length - 1]),
+  allowedDurations: DEFAULT_ALLOWED_DURATIONS,
   fundedPercentage: "",
   totalInvestors: "",
   occupancyScore: "",
@@ -78,6 +86,39 @@ function parseImageList(value) {
   return parseList(value);
 }
 
+function normalizeAllowedDurations(value) {
+  const source = Array.isArray(value) ? value : [value];
+
+  return [...new Set(
+    source
+      .map((entry) => Number(entry))
+      .filter(
+        (entry) => Number.isInteger(entry)
+          && entry >= MIN_DURATION_MONTHS
+          && entry <= MAX_DURATION_MONTHS
+      )
+  )].sort((left, right) => left - right);
+}
+
+function buildDurationState(value) {
+  const allowedDurations = normalizeAllowedDurations(value);
+  const selectedDurations = allowedDurations.length > 0 ? allowedDurations : DEFAULT_ALLOWED_DURATIONS;
+
+  return {
+    allowedDurations: selectedDurations,
+    minimumInvestmentMonths: String(selectedDurations[0]),
+    maximumInvestmentMonths: String(selectedDurations[selectedDurations.length - 1]),
+  };
+}
+
+function isBlankValue(value) {
+  if (Array.isArray(value)) {
+    return value.length === 0;
+  }
+
+  return String(value || "").trim() === "";
+}
+
 function toFormState(property) {
   if (!property) {
     return initialState;
@@ -113,9 +154,7 @@ function toFormState(property) {
     currentDailyPayoutAmount: String(property.currentDailyPayoutAmount || ""),
     projectedMonthlyPayoutAmount: String(property.projectedMonthlyPayoutAmount || ""),
     projectedAnnualPayoutAmount: String(property.projectedAnnualPayoutAmount || ""),
-    minimumInvestmentMonths: String(property.minimumInvestmentMonths || 2),
-    maximumInvestmentMonths: String(property.maximumInvestmentMonths || ""),
-    allowedDurations: Array.isArray(property.allowedDurations) ? property.allowedDurations.join(",") : "2,3,6,12",
+    ...buildDurationState(property.allowedDurations),
     fundedPercentage: String(property.fundedPercentage || ""),
     totalInvestors: String(property.totalInvestors || ""),
     occupancyScore: String(property.occupancyScore || ""),
@@ -146,6 +185,8 @@ function parseNumber(value) {
 }
 
 function toPayload(formState) {
+  const durationState = buildDurationState(formState.allowedDurations);
+
   return {
     name: formState.name.trim(),
     location: formState.location.trim(),
@@ -176,12 +217,9 @@ function toPayload(formState) {
     currentDailyPayoutAmount: parseNumber(formState.currentDailyPayoutAmount),
     projectedMonthlyPayoutAmount: parseNumber(formState.projectedMonthlyPayoutAmount),
     projectedAnnualPayoutAmount: parseNumber(formState.projectedAnnualPayoutAmount),
-    minimumInvestmentMonths: parseNumber(formState.minimumInvestmentMonths),
-    maximumInvestmentMonths: parseNumber(formState.maximumInvestmentMonths),
-    allowedDurations: formState.allowedDurations
-      .split(",")
-      .map((value) => Number(value.trim()))
-      .filter((value) => Number.isFinite(value) && value > 0),
+    minimumInvestmentMonths: parseNumber(durationState.minimumInvestmentMonths),
+    maximumInvestmentMonths: parseNumber(durationState.maximumInvestmentMonths),
+    allowedDurations: durationState.allowedDurations,
     fundedPercentage: parseNumber(formState.fundedPercentage),
     totalInvestors: parseNumber(formState.totalInvestors),
     occupancyScore: parseNumber(formState.occupancyScore),
@@ -202,16 +240,49 @@ function toPayload(formState) {
   };
 }
 
-export default function PropertyEditor({ property, mode = "edit", busy = false, onCancel, onSubmit }) {
+export default function PropertyEditor({ property, mode = "edit", busy = false, onAutofill, onCancel, onSubmit }) {
   const [formState, setFormState] = useState(initialState);
+  const [durationError, setDurationError] = useState("");
+  const [autofillBusy, setAutofillBusy] = useState(false);
+  const [autofillMessage, setAutofillMessage] = useState("");
+  const [autofillError, setAutofillError] = useState("");
 
   useEffect(() => {
     setFormState(toFormState(property));
+    setDurationError("");
+    setAutofillMessage("");
+    setAutofillError("");
   }, [property]);
 
   function handleChange(event) {
     const { name, value } = event.target;
     setFormState((current) => ({ ...current, [name]: value }));
+  }
+
+  function handleDurationToggle(month) {
+    setFormState((current) => {
+      const selected = new Set(normalizeAllowedDurations(current.allowedDurations));
+
+      if (selected.has(month)) {
+        selected.delete(month);
+      } else {
+        selected.add(month);
+      }
+
+      const nextDurations = normalizeAllowedDurations([...selected]);
+      const nextState = nextDurations.length > 0 ? buildDurationState(nextDurations) : {
+        allowedDurations: [],
+        minimumInvestmentMonths: "",
+        maximumInvestmentMonths: "",
+      };
+
+      return {
+        ...current,
+        ...nextState,
+      };
+    });
+
+    setDurationError("");
   }
 
   const previewImages = [formState.coverImage.trim(), ...parseImageList(formState.images)].filter(
@@ -220,8 +291,63 @@ export default function PropertyEditor({ property, mode = "edit", busy = false, 
 
   async function handleSubmit(event) {
     event.preventDefault();
+    if (normalizeAllowedDurations(formState.allowedDurations).length === 0) {
+      setDurationError("Select at least one investment duration.");
+      return;
+    }
+
     await onSubmit(toPayload(formState));
   }
+
+  async function handleAutofill() {
+    if (!onAutofill) {
+      return;
+    }
+
+    setAutofillBusy(true);
+    setAutofillError("");
+    setAutofillMessage("");
+
+    try {
+      const result = await onAutofill(toPayload(formState));
+      const nextValues = result && typeof result === "object" ? result : {};
+
+      setFormState((current) => {
+        const mergedState = { ...current };
+
+        Object.entries(nextValues).forEach(([key, value]) => {
+          if (!(key in mergedState) || !isBlankValue(mergedState[key])) {
+            return;
+          }
+
+          if (["highlights", "trustBadges", "tags", "images"].includes(key)) {
+            mergedState[key] = serializeList(Array.isArray(value) ? value : parseList(value));
+            return;
+          }
+
+          if (key === "allowedDurations") {
+            const durationState = buildDurationState(value);
+            mergedState.allowedDurations = durationState.allowedDurations;
+            mergedState.minimumInvestmentMonths = durationState.minimumInvestmentMonths;
+            mergedState.maximumInvestmentMonths = durationState.maximumInvestmentMonths;
+            return;
+          }
+
+          mergedState[key] = typeof value === "number" ? String(value) : String(value || "");
+        });
+
+        return mergedState;
+      });
+
+      setAutofillMessage("Blank property fields were filled from the current draft.");
+    } catch (error) {
+      setAutofillError(error.message || "Unable to fill blank fields right now.");
+    } finally {
+      setAutofillBusy(false);
+    }
+  }
+
+  const selectedDurationCount = normalizeAllowedDurations(formState.allowedDurations).length;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5 rounded-[2rem] border border-slate-200 bg-slate-50 p-5">
@@ -239,6 +365,25 @@ export default function PropertyEditor({ property, mode = "edit", busy = false, 
         >
           Cancel
         </button>
+      </div>
+
+      <div className="rounded-[1.75rem] border border-amber-200 bg-amber-50/80 p-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-slate-900">AI draft assist</p>
+            <p className="mt-1 text-sm text-slate-600">Fill blanks automatically populates missing property details by combining smart pricing heuristics with Gemini text generation for intelligent data completion.</p>
+          </div>
+          <button
+            type="button"
+            onClick={handleAutofill}
+            disabled={busy || autofillBusy}
+            className="rounded-2xl border border-amber-300 bg-white px-4 py-2.5 text-sm font-medium text-amber-900 transition hover:border-amber-400 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {autofillBusy ? "Filling blanks..." : "Fill blanks"}
+          </button>
+        </div>
+        {autofillMessage ? <p className="mt-3 text-sm text-emerald-700">{autofillMessage}</p> : null}
+        {autofillError ? <p className="mt-3 text-sm text-rose-700">{autofillError}</p> : null}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -412,16 +557,40 @@ export default function PropertyEditor({ property, mode = "edit", busy = false, 
         </label>
         <label className="space-y-2 text-sm text-slate-700">
           <span className="font-medium">Min months</span>
-          <input name="minimumInvestmentMonths" type="number" min="1" value={formState.minimumInvestmentMonths} onChange={handleChange} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-pink-300" />
+          <input name="minimumInvestmentMonths" type="number" min="1" value={formState.minimumInvestmentMonths} readOnly className="w-full rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3 outline-none" />
         </label>
         <label className="space-y-2 text-sm text-slate-700">
           <span className="font-medium">Max months</span>
-          <input name="maximumInvestmentMonths" type="number" min="1" value={formState.maximumInvestmentMonths} onChange={handleChange} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-pink-300" />
+          <input name="maximumInvestmentMonths" type="number" min="1" value={formState.maximumInvestmentMonths} readOnly className="w-full rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3 outline-none" />
         </label>
-        <label className="space-y-2 text-sm text-slate-700 xl:col-span-2">
-          <span className="font-medium">Allowed durations</span>
-          <input name="allowedDurations" value={formState.allowedDurations} onChange={handleChange} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-pink-300" />
-        </label>
+        <div className="space-y-3 text-sm text-slate-700 xl:col-span-2">
+          <div className="flex items-center justify-between gap-3">
+            <span className="font-medium">Allowed durations</span>
+            <span className="text-xs text-slate-500">{selectedDurationCount} selected</span>
+          </div>
+          <div className="grid grid-cols-3 gap-2 rounded-[1.5rem] border border-slate-200 bg-white p-3 sm:grid-cols-4 lg:grid-cols-6">
+            {DURATION_OPTIONS.map((month) => {
+              const selected = normalizeAllowedDurations(formState.allowedDurations).includes(month);
+
+              return (
+                <label
+                  key={month}
+                  className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm transition ${selected ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-slate-100"}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selected}
+                    onChange={() => handleDurationToggle(month)}
+                    className="h-4 w-4 rounded border-slate-300"
+                  />
+                  <span>{month} mo</span>
+                </label>
+              );
+            })}
+          </div>
+          <p className="text-xs text-slate-500">Choose every month length investors can book for this property. Min and max update automatically.</p>
+          {durationError ? <p className="text-sm text-rose-700">{durationError}</p> : null}
+        </div>
         <label className="space-y-2 text-sm text-slate-700">
           <span className="font-medium">Funded %</span>
           <input name="fundedPercentage" type="number" min="0" max="100" value={formState.fundedPercentage} onChange={handleChange} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-pink-300" />

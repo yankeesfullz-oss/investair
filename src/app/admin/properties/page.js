@@ -133,6 +133,14 @@ export default function AdminPropertiesPage() {
     }
   }
 
+  async function handleAutofillDraft(payload) {
+    return apiFetch('/api/properties/autofill', {
+      method: 'POST',
+      tokenStorageKey: 'admin_token',
+      body: JSON.stringify(payload),
+    });
+  }
+
   return (
     <div className="space-y-6">
       <section className="rounded-[2.5rem] border border-white/70 bg-white/85 p-6 shadow-[0_20px_70px_rgba(15,23,42,0.06)]">
@@ -163,6 +171,7 @@ export default function AdminPropertiesPage() {
         <PropertyEditor
           mode="create"
           busy={isSaving}
+          onAutofill={handleAutofillDraft}
           onCancel={() => setIsCreating(false)}
           onSubmit={handleCreate}
         />
@@ -172,6 +181,7 @@ export default function AdminPropertiesPage() {
         <PropertyEditor
           property={activeProperty}
           busy={isSaving}
+          onAutofill={handleAutofillDraft}
           onCancel={() => setActiveProperty(null)}
           onSubmit={handleUpdate}
         />

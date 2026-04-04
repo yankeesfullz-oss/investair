@@ -5,6 +5,7 @@ import {
   parseInvestmentPrice,
   sortInvestmentProperties,
 } from "@/lib/investmentPropertyUtils";
+import { PROPERTY_REVALIDATE_SECONDS } from "@/lib/site";
 
 function getBackendApiBaseUrl() {
   return (process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/$/, "");
@@ -12,7 +13,9 @@ function getBackendApiBaseUrl() {
 
 async function fetchBackendProperties() {
   const response = await fetch(`${getBackendApiBaseUrl()}/api/properties`, {
-    cache: "no-store",
+    next: {
+      revalidate: PROPERTY_REVALIDATE_SECONDS,
+    },
   });
 
   if (!response.ok) {
