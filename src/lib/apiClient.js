@@ -1,5 +1,13 @@
 let cachedBackendUrl = null;
 let auth0AccessTokenRetryAt = 0;
+const missingEndpointRetryAt = new Map();
+
+function createApiError(message, status, body = null) {
+  const err = new Error(message);
+  err.status = status;
+  err.body = body;
+  return err;
+}
 
 async function getAuth0AccessToken() {
   if (typeof window === 'undefined') return null;
@@ -36,6 +44,17 @@ export async function getBackendUrl() {
 export async function apiFetch(path, options = {}) {
   const base = await getBackendUrl();
   const { tokenStorageKey = 'token', headers: optionHeaders, ...restOptions } = options;
+  const method = String(restOptions.method || 'GET').toUpperCase();
+  const requestUrl = `${base}${path}`;
+  const missingEndpointKey = `${method}:${requestUrl}`;
+
+  if (method === 'GET') {
+    const retryAt = missingEndpointRetryAt.get(missingEndpointKey);
+    if (retryAt && retryAt > Date.now()) {
+      throw createApiError('Endpoint temporarily unavailable', 404);
+    }
+  }
+
   let token = null;
   if (typeof window !== 'undefined') {
     token = localStorage.getItem(tokenStorageKey);
@@ -55,7 +74,7 @@ export async function apiFetch(path, options = {}) {
 
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(`${base}${path}`, { ...restOptions, headers, credentials: 'include' });
+  const res = await fetch(requestUrl, { ...restOptions, headers, credentials: 'include' });
   const text = await res.text();
   let data = null;
   try {
@@ -65,11 +84,16 @@ export async function apiFetch(path, options = {}) {
   }
 
   if (!res.ok) {
+    if (res.status === 404 && method === 'GET') {
+      missingEndpointRetryAt.set(missingEndpointKey, Date.now() + 60_000);
+    }
+
     const message = data && data.message ? data.message : res.statusText || 'API error';
-    const err = new Error(message);
-    err.status = res.status;
-    err.body = data;
-    throw err;
+    throw createApiError(message, res.status, data);
+  }
+
+  if (method === 'GET') {
+    missingEndpointRetryAt.delete(missingEndpointKey);
   }
 
   return data;

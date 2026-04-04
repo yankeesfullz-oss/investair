@@ -1,4 +1,4 @@
-const CACHE_NAME = 'investair-shell-v1';
+const CACHE_NAME = 'investair-shell-v2';
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest',
@@ -60,7 +60,16 @@ self.addEventListener('fetch', (event) => {
           }
           return response;
         })
-        .catch(() => cachedResponse);
+        .catch(() => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+
+          return new Response('', {
+            status: 504,
+            statusText: 'Offline',
+          });
+        });
 
       return cachedResponse || networkFetch;
     })
