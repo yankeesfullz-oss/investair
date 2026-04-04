@@ -2,15 +2,10 @@ let cachedBackendUrl = null;
 
 export async function getBackendUrl() {
   if (cachedBackendUrl) return cachedBackendUrl;
-  try {
-    const res = await fetch('/api/config');
-    if (!res.ok) throw new Error('Failed to read config');
-    const data = await res.json();
-    cachedBackendUrl = data.backendUrl;
-    return cachedBackendUrl;
-  } catch (e) {
-    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-  }
+  // Prefer build-time environment variable NEXT_PUBLIC_API_URL so backend URL
+  // isn't hardcoded in source. Fallback to localhost for local dev.
+  cachedBackendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  return cachedBackendUrl;
 }
 
 export async function apiFetch(path, options = {}) {

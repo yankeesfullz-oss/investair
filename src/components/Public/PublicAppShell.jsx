@@ -6,6 +6,7 @@ import Navbar from "@/components/Public/navbar";
 import Footer from "@/components/Public/footer";
 import GeoSuggestionPopup from "@/components/Public/geoSuggestionPopup";
 import { SearchExperienceProvider } from "@/components/Public/searchExperienceProvider";
+import AuthProvider from "@/context/AuthProvider";
 import InvestAirChatWidget from "@/components/ChatWidget/InvestAirChatWidget";
 
 export default function PublicAppShell({ children }) {
@@ -13,7 +14,8 @@ export default function PublicAppShell({ children }) {
   const hidePublicChrome = pathname?.startsWith("/admin") || pathname?.startsWith("/investor");
 
   return (
-    <SearchExperienceProvider>
+    <AuthProvider>
+      <SearchExperienceProvider>
       {!hidePublicChrome && <Navbar />}
       {!hidePublicChrome && <GeoSuggestionPopup />}
       <div style={{ minHeight: "70vh" }}>{children}</div>
@@ -23,6 +25,7 @@ export default function PublicAppShell({ children }) {
           <InvestAirChatWidget />
         </Suspense>
       )}
-    </SearchExperienceProvider>
+      </SearchExperienceProvider>
+    </AuthProvider>
   );
 }
