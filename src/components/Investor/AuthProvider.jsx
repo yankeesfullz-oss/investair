@@ -55,18 +55,30 @@ export default function InvestorAuthProvider({ children }) {
         return;
       }
 
+      const sessionUser = {
+        email: auth0User.email,
+        fullName: auth0User.name || auth0User.nickname || 'Investor',
+        role: 'investor',
+        auth0Sub: auth0User.sub,
+      };
+
       try {
         const accessToken = await getAccessToken();
         if (accessToken) {
           localStorage.setItem(INVESTOR_TOKEN_KEY, accessToken);
         }
 
-        const sessionUser = {
-          email: auth0User.email,
-          fullName: auth0User.name || auth0User.nickname || 'Investor',
-          role: 'investor',
-          auth0Sub: auth0User.sub,
-        };
+        if (!accessToken) {
+          if (!mounted) {
+            return;
+          }
+          setUser(sessionUser);
+          setWallets([]);
+          if (isAuthPage) {
+            router.replace('/investor/dashboard');
+          }
+          return;
+        }
 
         const profile = await apiFetch('/api/users/me', { tokenStorageKey: INVESTOR_TOKEN_KEY }).catch(() => sessionUser);
         if (!mounted) {
@@ -87,11 +99,16 @@ export default function InvestorAuthProvider({ children }) {
         if (!mounted) {
           return;
         }
-        localStorage.removeItem(INVESTOR_TOKEN_KEY);
-        setUser(null);
+
+        setUser(sessionUser);
         setWallets([]);
-        if (!isAuthPage) {
-          router.replace('/investor/login');
+
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(INVESTOR_TOKEN_KEY);
+        }
+
+        if (isAuthPage) {
+          router.replace('/investor/dashboard');
         }
       } finally {
         if (mounted) {

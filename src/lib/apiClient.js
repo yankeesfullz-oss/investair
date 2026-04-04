@@ -1,14 +1,26 @@
 let cachedBackendUrl = null;
+let auth0AccessTokenRetryAt = 0;
 
 async function getAuth0AccessToken() {
   if (typeof window === 'undefined') return null;
 
+  if (Date.now() < auth0AccessTokenRetryAt) {
+    return null;
+  }
+
   try {
     const res = await fetch('/auth/access-token', { credentials: 'include' });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      if (res.status === 404 || res.status === 401) {
+        auth0AccessTokenRetryAt = Date.now() + 60_000;
+      }
+      return null;
+    }
     const data = await res.json();
+    auth0AccessTokenRetryAt = 0;
     return data?.token || null;
   } catch {
+    auth0AccessTokenRetryAt = Date.now() + 30_000;
     return null;
   }
 }
