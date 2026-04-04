@@ -1,7 +1,7 @@
 import { getInvestmentProperties } from "@/lib/investmentProperties";
-import { absoluteUrl, getPropertyPath, getSiteUrl, PROPERTY_REVALIDATE_SECONDS } from "@/lib/site";
+import { absoluteUrl, getPropertyPath, getSiteUrl } from "@/lib/site";
 
-export const revalidate = PROPERTY_REVALIDATE_SECONDS;
+export const revalidate = 3600;
 
 export default async function sitemap() {
   const baseUrl = getSiteUrl();

@@ -2,11 +2,8 @@
 
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { ArrowRight, UserPlus, WalletCards } from 'lucide-react';
-import { apiFetch } from '@/lib/apiClient';
-import { INVESTOR_TOKEN_KEY } from '@/components/Investor/AuthProvider';
 
 export default function InvestorSignupPage() {
   return (
@@ -17,44 +14,15 @@ export default function InvestorSignupPage() {
 }
 
 function InvestorSignupPageContent() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirectTo') || '/investor/dashboard';
   const months = searchParams.get('months');
+  const googleConnection = process.env.NEXT_PUBLIC_AUTH0_GOOGLE_CONNECTION || 'google-oauth2';
 
   const loginHref = `/investor/login?redirectTo=${encodeURIComponent(redirectTo)}${months ? `&months=${encodeURIComponent(months)}` : ''}`;
-
-  async function handleSubmit(event) {
-    event.preventDefault();
-    setLoading(true);
-    setError('');
-
-    try {
-      const data = await apiFetch('/api/auth/investor/register', {
-        method: 'POST',
-        tokenStorageKey: INVESTOR_TOKEN_KEY,
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!data?.token) {
-        throw new Error('Invalid response from server');
-      }
-
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(INVESTOR_TOKEN_KEY, data.token);
-      }
-
-      router.replace(redirectTo);
-    } catch (requestError) {
-      setError(requestError.message || 'Unable to create account');
-    } finally {
-      setLoading(false);
-    }
-  }
+  const signupHref = `/auth/login?screen_hint=signup&returnTo=${encodeURIComponent(redirectTo)}`;
+  const googleSignupHref = `/auth/login?screen_hint=signup&connection=${encodeURIComponent(googleConnection)}&returnTo=${encodeURIComponent(redirectTo)}`;
+  const authLoginHref = `/auth/login?returnTo=${encodeURIComponent(redirectTo)}`;
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#fff7fb_0%,#ffffff_38%,#f8fbff_100%)] px-4 py-8">
@@ -65,36 +33,21 @@ function InvestorSignupPageContent() {
               <UserPlus className="h-6 w-6" />
             </div>
             <h1 className="text-3xl font-semibold text-slate-900">Create an investor account</h1>
-            <p className="mt-2 text-sm text-slate-500">Sign up and receive your dedicated BTC and USDT funding addresses instantly.</p>
-            {error ? <div className="mt-6 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div> : null}
-            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">Email</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-pink-300"
-                  placeholder="investor@example.com"
-                  required
-                />
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">Password</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-pink-300"
-                  placeholder="Create a secure password"
-                  required
-                />
-              </div>
-              <button type="submit" disabled={loading} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 font-medium text-white transition hover:bg-slate-800 disabled:opacity-60">
-                {loading ? 'Creating account...' : 'Create account'}
+            <p className="mt-2 text-sm text-slate-500">Create your account with Google in one click, or use Auth0 email/password if you prefer.</p>
+            <div className="mt-6 space-y-4">
+              <a href={googleSignupHref} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 font-medium text-white transition hover:bg-slate-800">
+                Continue with Google
                 <ArrowRight className="h-4 w-4" />
-              </button>
-            </form>
+              </a>
+              <a href={signupHref} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">
+                Sign up with email or password
+                <ArrowRight className="h-4 w-4" />
+              </a>
+              <a href={authLoginHref} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-pink-200 bg-pink-50 px-5 py-3 font-medium text-pink-700 transition hover:bg-pink-100">
+                Already have an account? Log in
+                <ArrowRight className="h-4 w-4" />
+              </a>
+            </div>
             <p className="mt-6 text-sm text-slate-500">
               Already registered?{' '}
               <Link href={loginHref} className="font-medium text-pink-600 hover:text-pink-700">

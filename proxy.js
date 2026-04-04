@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { auth0 } from "./src/lib/auth0";
 import { normalizeCountryCode } from "./src/lib/countryConfig";
 
 const COUNTRY_COOKIE = "user-country";
@@ -17,8 +17,8 @@ function detectCountry(request) {
   );
 }
 
-export function middleware(request) {
-  const response = NextResponse.next();
+export async function proxy(request) {
+  const response = await auth0.middleware(request);
   const country = detectCountry(request);
 
   if (request.cookies.get(COUNTRY_COOKIE)?.value !== country) {
@@ -34,5 +34,5 @@ export function middleware(request) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\..*).*)"],
 };

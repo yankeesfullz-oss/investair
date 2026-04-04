@@ -27,10 +27,9 @@ import {
   getCanonicalPropertySegment,
   getPropertyPath,
   getSiteUrl,
-  PROPERTY_REVALIDATE_SECONDS,
 } from "@/lib/site";
 
-export const revalidate = PROPERTY_REVALIDATE_SECONDS;
+export const revalidate = 3600;
 
 function formatUsd(value) {
   return new Intl.NumberFormat("en-US", {

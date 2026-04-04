@@ -1,7 +1,9 @@
+import { Auth0Provider } from "@auth0/nextjs-auth0/client";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import PublicAppShell from "@/components/Public/PublicAppShell";
 import PwaRegistration from "@/components/Public/PwaRegistration";
+import { auth0 } from "@/lib/auth0";
 import { absoluteUrl, getSiteUrl } from "@/lib/site";
 
 const geistSans = Geist({
@@ -65,7 +67,8 @@ export const viewport = {
   themeColor: "#0f172a",
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const session = await auth0.getSession();
   const structuredData = [
     {
       "@context": "https://schema.org",
@@ -91,12 +94,14 @@ export default function RootLayout({ children }) {
         suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-        />
-        <PwaRegistration />
-        <PublicAppShell>{children}</PublicAppShell>
+        <Auth0Provider user={session?.user}>
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+          />
+          <PwaRegistration />
+          <PublicAppShell>{children}</PublicAppShell>
+        </Auth0Provider>
       </body>
     </html>
   );

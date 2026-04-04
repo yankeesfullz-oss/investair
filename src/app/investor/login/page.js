@@ -2,11 +2,8 @@
 
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { ArrowRight, LogIn } from 'lucide-react';
-import { apiFetch } from '@/lib/apiClient';
-import { INVESTOR_TOKEN_KEY } from '@/components/Investor/AuthProvider';
 
 export default function InvestorLoginPage() {
   return (
@@ -17,44 +14,15 @@ export default function InvestorLoginPage() {
 }
 
 function InvestorLoginPageContent() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirectTo') || '/investor/dashboard';
   const months = searchParams.get('months');
+  const googleConnection = process.env.NEXT_PUBLIC_AUTH0_GOOGLE_CONNECTION || 'google-oauth2';
 
   const signupHref = `/investor/signup?redirectTo=${encodeURIComponent(redirectTo)}${months ? `&months=${encodeURIComponent(months)}` : ''}`;
-
-  async function handleSubmit(event) {
-    event.preventDefault();
-    setLoading(true);
-    setError('');
-
-    try {
-      const data = await apiFetch('/api/auth/investor/login', {
-        method: 'POST',
-        tokenStorageKey: INVESTOR_TOKEN_KEY,
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!data?.token) {
-        throw new Error('Invalid response from server');
-      }
-
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(INVESTOR_TOKEN_KEY, data.token);
-      }
-
-      router.replace(redirectTo);
-    } catch (requestError) {
-      setError(requestError.message || 'Unable to sign in');
-    } finally {
-      setLoading(false);
-    }
-  }
+  const loginHref = `/auth/login?returnTo=${encodeURIComponent(redirectTo)}`;
+  const googleLoginHref = `/auth/login?connection=${encodeURIComponent(googleConnection)}&returnTo=${encodeURIComponent(redirectTo)}`;
+  const signupAuthHref = `/auth/login?screen_hint=signup&returnTo=${encodeURIComponent(redirectTo)}`;
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(251,207,232,0.95),rgba(255,255,255,1)_48%)] px-4 py-8">
@@ -75,37 +43,25 @@ function InvestorLoginPageContent() {
                 <LogIn className="h-6 w-6" />
               </div>
               <h2 className="text-3xl font-semibold text-slate-900">Investor login</h2>
-              <p className="mt-2 text-sm text-slate-500">Access your wallets and funding dashboard.</p>
+              <p className="mt-2 text-sm text-slate-500">Use Google for one-click access, or continue with email and password through Auth0.</p>
             </div>
-            {error ? <div className="mb-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div> : null}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">Email</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-pink-300"
-                  placeholder="you@example.com"
-                  required
-                />
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">Password</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-pink-300"
-                  placeholder="Enter your password"
-                  required
-                />
-              </div>
-              <button type="submit" disabled={loading} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 font-medium text-white transition hover:bg-slate-800 disabled:opacity-60">
-                {loading ? 'Signing in...' : 'Log in'}
+            <div className="space-y-4">
+              <a href={googleLoginHref} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 font-medium text-white transition hover:bg-slate-800">
+                Continue with Google
                 <ArrowRight className="h-4 w-4" />
-              </button>
-            </form>
+              </a>
+              <a href={loginHref} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">
+                Continue with email or password
+                <ArrowRight className="h-4 w-4" />
+              </a>
+              <a href={signupAuthHref} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-pink-200 bg-pink-50 px-5 py-3 font-medium text-pink-700 transition hover:bg-pink-100">
+                Create investor account
+                <ArrowRight className="h-4 w-4" />
+              </a>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500">
+                The Google button jumps straight to Google through Auth0. The standard option keeps Auth0 email/password available.
+              </div>
+            </div>
             <p className="mt-6 text-sm text-slate-500">
               New to InvestAir?{' '}
               <Link href={signupHref} className="font-medium text-pink-600 hover:text-pink-700">

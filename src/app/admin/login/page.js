@@ -35,7 +35,7 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(251,207,232,0.9),_rgba(255,255,255,1)_55%)] p-4">
+    <div className="min-h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(251,207,232,0.9),rgba(255,255,255,1)_55%)] p-4">
       <div className="w-full max-w-md rounded-3xl border border-pink-100 bg-white/90 p-6 shadow-[0_30px_100px_rgba(244,114,182,0.18)] backdrop-blur">
         <h1 className="mb-2 text-xl font-semibold text-slate-900">Admin Login</h1>
         <p className="mb-4 text-sm text-slate-500">Sign in to manage the InvestAir platform.</p>

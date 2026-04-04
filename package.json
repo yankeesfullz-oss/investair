@@ -11,6 +11,7 @@
     "properties:build": "node scripts/generateMichiganInvestmentProperties.mjs"
   },
   "dependencies": {
+    "@auth0/nextjs-auth0": "^4.16.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "currency-codes": "^2.2.0",
