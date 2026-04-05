@@ -129,7 +129,9 @@ export default function InvestorAuthProvider({ children }) {
   function logout() {
     if (typeof window !== 'undefined') {
       localStorage.removeItem(INVESTOR_TOKEN_KEY);
-      window.location.assign('/auth/logout?returnTo=/investor/login');
+      const returnTo = new URL('/investor/login', window.location.origin).toString();
+      const logoutUrl = `/auth/logout?${new URLSearchParams({ returnTo }).toString()}`;
+      window.location.assign(logoutUrl);
       return;
     }
     setUser(null);
