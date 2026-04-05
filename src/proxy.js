@@ -1,5 +1,5 @@
-import { auth0 } from "./src/lib/auth0";
-import { normalizeCountryCode } from "./src/lib/countryConfig";
+import { auth0 } from "./lib/auth0";
+import { normalizeCountryCode } from "./lib/countryConfig";
 
 const COUNTRY_COOKIE = "user-country";
 const FALLBACK_COUNTRY = "US";
