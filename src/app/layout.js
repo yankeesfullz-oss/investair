@@ -1,20 +1,9 @@
 import { Auth0Provider } from "@auth0/nextjs-auth0/client";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import PublicAppShell from "@/components/Public/PublicAppShell";
 import PwaRegistration from "@/components/Public/PwaRegistration";
 import { auth0 } from "@/lib/auth0";
 import { absoluteUrl, getSiteUrl } from "@/lib/site";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata = {
   applicationName: "InvestAir",
@@ -92,7 +81,7 @@ export default async function RootLayout({ children }) {
     <html lang="en">
       <body
         suppressHydrationWarning
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className="antialiased"
       >
         <Auth0Provider user={session?.user}>
           <script

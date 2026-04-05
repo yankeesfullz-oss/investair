@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { io } from 'socket.io-client';
-import { Bot, Headset, LoaderCircle, MessagesSquare, ScanEye } from 'lucide-react';
+import { Bot, Headset, LoaderCircle, MessagesSquare, ScanEye, UserRound } from 'lucide-react';
 
 import { apiFetch, getBackendUrl } from '@/lib/apiClient';
 import { formatDateTime } from '@/lib/dashboardFormatting';
@@ -18,12 +18,19 @@ function mergeMessages(currentMessages, nextMessages) {
     }
   });
 
-  return [...map.values()].sort((left, right) => new Date(right.createdAt || 0) - new Date(left.createdAt || 0));
+  return [...map.values()].sort((left, right) => new Date(left.createdAt || 0) - new Date(right.createdAt || 0));
+}
+
+function sortUsersByLatest(left, right) {
+  return new Date(right.lastMessageAt || 0) - new Date(left.lastMessageAt || 0);
 }
 
 export default function AdminChatbotsPage() {
-  const [messages, setMessages] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [chatUsers, setChatUsers] = useState([]);
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [selectedMessages, setSelectedMessages] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [loadingMessages, setLoadingMessages] = useState(false);
   const [connectionState, setConnectionState] = useState('Connecting');
   const [error, setError] = useState('');
 
@@ -33,12 +40,14 @@ export default function AdminChatbotsPage() {
 
     async function load() {
       try {
-        const initialMessages = await apiFetch('/api/chat/admin/messages', { tokenStorageKey: ADMIN_TOKEN_KEY });
+        const initialUsers = await apiFetch('/api/chat/admin/users', { tokenStorageKey: ADMIN_TOKEN_KEY });
         if (!active) {
           return;
         }
 
-        setMessages(Array.isArray(initialMessages) ? initialMessages : []);
+        const normalizedUsers = Array.isArray(initialUsers) ? initialUsers : [];
+        setChatUsers(normalizedUsers);
+        setSelectedUserId((current) => current || normalizedUsers[0]?._id || '');
         const backendUrl = await getBackendUrl();
         const token = typeof window !== 'undefined' ? localStorage.getItem(ADMIN_TOKEN_KEY) : '';
 
@@ -64,7 +73,35 @@ export default function AdminChatbotsPage() {
             return;
           }
 
-          setMessages((current) => mergeMessages(current, payload.messages));
+          const payloadUser = payload?.user;
+
+          if (payloadUser?._id) {
+            setChatUsers((current) => {
+              const nextUsers = [...current];
+              const existingIndex = nextUsers.findIndex((item) => item._id === payloadUser._id || item.user?._id === payloadUser._id);
+              const nextSummary = {
+                _id: payloadUser._id,
+                user: payloadUser,
+                messageCount: (existingIndex >= 0 ? Number(nextUsers[existingIndex].messageCount || 0) : 0) + payload.messages.length,
+                lastMessageAt: payload.messages[payload.messages.length - 1]?.createdAt || new Date().toISOString(),
+                lastMessagePreview: payload.messages[payload.messages.length - 1]?.content || '',
+                escalationRequested: payload.messages.some((message) => message.escalationRequested) || (existingIndex >= 0 && nextUsers[existingIndex].escalationRequested),
+                liveSupportOffered: payload.messages.some((message) => message.liveSupportOffered) || (existingIndex >= 0 && nextUsers[existingIndex].liveSupportOffered),
+              };
+
+              if (existingIndex >= 0) {
+                nextUsers.splice(existingIndex, 1, nextSummary);
+              } else {
+                nextUsers.push(nextSummary);
+              }
+
+              return nextUsers.sort(sortUsersByLatest);
+            });
+
+            if (selectedUserId === payloadUser._id) {
+              setSelectedMessages((current) => mergeMessages(current, payload.messages));
+            }
+          }
         });
       } catch (requestError) {
         if (active) {
@@ -72,7 +109,7 @@ export default function AdminChatbotsPage() {
         }
       } finally {
         if (active) {
-          setLoading(false);
+          setLoadingUsers(false);
         }
       }
     }
@@ -83,13 +120,51 @@ export default function AdminChatbotsPage() {
       active = false;
       socket?.disconnect();
     };
-  }, []);
+  }, [selectedUserId]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadMessages() {
+      if (!selectedUserId) {
+        setSelectedMessages([]);
+        setLoadingMessages(false);
+        return;
+      }
+
+      setLoadingMessages(true);
+      try {
+        const messages = await apiFetch(`/api/chat/admin/users/${selectedUserId}/messages`, { tokenStorageKey: ADMIN_TOKEN_KEY });
+        if (!active) {
+          return;
+        }
+
+        setSelectedMessages(Array.isArray(messages) ? messages : []);
+      } catch (requestError) {
+        if (active) {
+          setError(requestError.message || 'Unable to load conversation.');
+        }
+      } finally {
+        if (active) {
+          setLoadingMessages(false);
+        }
+      }
+    }
+
+    void loadMessages();
+
+    return () => {
+      active = false;
+    };
+  }, [selectedUserId]);
 
   const summary = useMemo(() => ({
-    total: messages.length,
-    escalations: messages.filter((message) => message.liveSupportOffered).length,
-    screenshots: messages.filter((message) => Array.isArray(message.attachments) && message.attachments.length > 0).length,
-  }), [messages]);
+    total: chatUsers.reduce((sum, user) => sum + Number(user.messageCount || 0), 0),
+    escalations: chatUsers.filter((user) => user.liveSupportOffered || user.escalationRequested).length,
+    screenshots: selectedMessages.filter((message) => Array.isArray(message.attachments) && message.attachments.length > 0).length,
+  }), [chatUsers, selectedMessages]);
+
+  const selectedUser = chatUsers.find((item) => item._id === selectedUserId || item.user?._id === selectedUserId) || null;
 
   return (
     <div className="space-y-6">
@@ -130,19 +205,97 @@ export default function AdminChatbotsPage() {
         })}
       </section>
 
-      <section className="rounded-[2rem] border border-white/70 bg-white/85 p-6 shadow-[0_20px_70px_rgba(15,23,42,0.06)]">
-        {loading ? (
+      <section className="grid gap-6 xl:grid-cols-[0.95fr_1.45fr]">
+        <div className="rounded-[2rem] border border-white/70 bg-white/85 p-6 shadow-[0_20px_70px_rgba(15,23,42,0.06)]">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-semibold text-slate-900">Users with chatbot activity</h2>
+              <p className="mt-1 text-sm text-slate-500">Only investors who have interacted with the chatbot appear here.</p>
+            </div>
+            <div className="rounded-full bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">{chatUsers.length} users</div>
+          </div>
+
+          {loadingUsers ? (
+            <div className="flex items-center justify-center rounded-2xl bg-slate-50 px-4 py-10 text-sm text-slate-500">
+              <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+              Loading chatbot users...
+            </div>
+          ) : error ? (
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-5 text-sm text-rose-700">{error}</div>
+          ) : chatUsers.length === 0 ? (
+            <div className="rounded-2xl bg-slate-50 px-4 py-5 text-sm text-slate-500">No chatbot logs yet.</div>
+          ) : (
+            <div className="space-y-3">
+              {chatUsers.map((chatUser) => {
+                const isActive = (chatUser._id || chatUser.user?._id) === selectedUserId;
+
+                return (
+                  <button
+                    key={chatUser._id || chatUser.user?._id}
+                    type="button"
+                    onClick={() => setSelectedUserId(chatUser._id || chatUser.user?._id || '')}
+                    className={`w-full rounded-[1.5rem] border p-4 text-left transition ${isActive ? 'border-slate-900 bg-slate-900 text-white shadow-lg' : 'border-slate-100 bg-slate-50/80 text-slate-900 hover:border-slate-200 hover:bg-white'}`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="font-semibold">{chatUser.user?.fullName || 'Investor'}</div>
+                        <div className={`mt-1 text-sm ${isActive ? 'text-slate-200' : 'text-slate-500'}`}>{chatUser.user?.email || 'No email'}</div>
+                      </div>
+                      <div className={`rounded-full px-3 py-1 text-xs font-medium ${isActive ? 'bg-white/10 text-white' : 'bg-white text-slate-600'}`}>{chatUser.messageCount || 0} msgs</div>
+                    </div>
+                    <div className={`mt-3 text-sm ${isActive ? 'text-slate-200' : 'text-slate-500'}`}>{chatUser.lastMessagePreview || 'No preview yet'}</div>
+                    <div className="mt-3 flex flex-wrap gap-2 text-[11px] uppercase tracking-[0.2em]">
+                      <span className={`rounded-full px-2.5 py-1 ${isActive ? 'bg-white/10 text-white' : 'bg-white text-slate-500'}`}>{formatDateTime(chatUser.lastMessageAt)}</span>
+                      {chatUser.liveSupportOffered ? <span className={`rounded-full px-2.5 py-1 ${isActive ? 'bg-amber-400/20 text-amber-100' : 'bg-amber-50 text-amber-700'}`}>Live agent</span> : null}
+                      {chatUser.escalationRequested ? <span className={`rounded-full px-2.5 py-1 ${isActive ? 'bg-rose-400/20 text-rose-100' : 'bg-rose-50 text-rose-700'}`}>Escalation</span> : null}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-[2rem] border border-white/70 bg-white/85 p-6 shadow-[0_20px_70px_rgba(15,23,42,0.06)]">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-semibold text-slate-900">Conversation log</h2>
+              <p className="mt-1 text-sm text-slate-500">Select a user to inspect their full chatbot conversation.</p>
+            </div>
+            <div className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium ${connectionState === 'Live' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+              <MessagesSquare className="h-4 w-4" />
+              {connectionState}
+            </div>
+          </div>
+
+          {selectedUser ? (
+            <div className="mb-5 rounded-[1.5rem] border border-slate-100 bg-slate-50/80 p-4">
+              <div className="flex items-center gap-3">
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-700 shadow-sm">
+                  <UserRound className="h-5 w-5" />
+                </span>
+                <div>
+                  <div className="font-semibold text-slate-900">{selectedUser.user?.fullName || 'Investor'}</div>
+                  <div className="text-sm text-slate-500">{selectedUser.user?.email || 'No email'}</div>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {!selectedUserId ? (
+            <div className="rounded-2xl bg-slate-50 px-4 py-5 text-sm text-slate-500">Choose a chatbot user from the left panel.</div>
+          ) : loadingMessages ? (
           <div className="flex items-center justify-center rounded-2xl bg-slate-50 px-4 py-10 text-sm text-slate-500">
             <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-            Loading chatbot logs...
+              Loading conversation...
           </div>
-        ) : error ? (
+          ) : error ? (
           <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-5 text-sm text-rose-700">{error}</div>
-        ) : messages.length === 0 ? (
-          <div className="rounded-2xl bg-slate-50 px-4 py-5 text-sm text-slate-500">No chatbot logs yet.</div>
-        ) : (
-          <div className="space-y-4">
-            {messages.map((message) => (
+          ) : selectedMessages.length === 0 ? (
+            <div className="rounded-2xl bg-slate-50 px-4 py-5 text-sm text-slate-500">This user has no stored messages yet.</div>
+          ) : (
+            <div className="space-y-4">
+            {selectedMessages.map((message) => (
               <article key={message._id} className="rounded-[1.5rem] border border-slate-100 bg-slate-50/80 p-4">
                 <div>
                   <div>
@@ -193,7 +346,8 @@ export default function AdminChatbotsPage() {
               </article>
             ))}
           </div>
-        )}
+          )}
+        </div>
       </section>
     </div>
   );

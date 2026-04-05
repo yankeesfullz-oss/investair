@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Building2, CreditCard, LayoutDashboard, LogOut, ReceiptText, ShieldCheck, Wallet } from 'lucide-react';
+import { ArrowDownToLine, Building2, CreditCard, LayoutDashboard, LogOut, ReceiptText, ShieldCheck, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const items = [
   { href: '/investor/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/investor/deposit', label: 'Deposit', icon: ArrowDownToLine },
   { href: '/investor/properties', label: 'Property Management', icon: Building2 },
   { href: '/investor/withdrawals', label: 'Withdrawals', icon: CreditCard },
   { href: '/investor/transactions', label: 'Transactions', icon: ReceiptText },

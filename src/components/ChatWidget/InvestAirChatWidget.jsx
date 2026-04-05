@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react';
 
+import { useInvestorAuth } from '@/components/Investor/AuthProvider';
 import { apiFetch } from '@/lib/apiClient';
 import { openTawkSupport } from '@/lib/tawk';
 
@@ -105,14 +106,13 @@ export default function InvestAirChatWidget() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { user, wallets: providerWallets, loading: sessionLoading } = useInvestorAuth();
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [sessionLoading, setSessionLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [user, setUser] = useState(null);
   const [wallets, setWallets] = useState([]);
   const [messages, setMessages] = useState([buildGuestMessage()]);
   const [chatSessionId, setChatSessionId] = useState('');
@@ -165,8 +165,25 @@ export default function InvestAirChatWidget() {
   }, []);
 
   useEffect(() => {
-    void loadSession();
-  }, [pathname]);
+    if (sessionLoading) {
+      return;
+    }
+
+    if (!user) {
+      setWallets([]);
+      setMessages([buildGuestMessage()]);
+      return;
+    }
+
+    setWallets(Array.isArray(providerWallets) ? providerWallets : []);
+    setMessages((current) => {
+      if (current.length > 1) {
+        return current;
+      }
+
+      return [buildInvestorMessage(user, Array.isArray(providerWallets) ? providerWallets : [])];
+    });
+  }, [pathname, providerWallets, sessionLoading, user]);
 
   useEffect(() => {
     if (!isOpen || !user) {
@@ -179,52 +196,6 @@ export default function InvestAirChatWidget() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isOpen]);
-
-  async function loadSession() {
-    setSessionLoading(true);
-    setError('');
-
-    try {
-      if (typeof window === 'undefined') {
-        return;
-      }
-
-      const token = localStorage.getItem(INVESTOR_TOKEN_KEY);
-      if (!token) {
-        setUser(null);
-        setWallets([]);
-        setMessages([buildGuestMessage()]);
-        return;
-      }
-
-      const [profile, walletData] = await Promise.all([
-        apiFetch('/api/users/me', { tokenStorageKey: INVESTOR_TOKEN_KEY }),
-        apiFetch('/api/wallets', { tokenStorageKey: INVESTOR_TOKEN_KEY }),
-      ]);
-
-      if (profile?.role !== 'investor') {
-        localStorage.removeItem(INVESTOR_TOKEN_KEY);
-        setUser(null);
-        setWallets([]);
-        setMessages([buildGuestMessage()]);
-        return;
-      }
-
-      const nextWallets = Array.isArray(walletData) ? walletData : [];
-      setUser(profile);
-      setWallets(nextWallets);
-      setMessages([buildInvestorMessage(profile, nextWallets)]);
-    } catch {
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem(INVESTOR_TOKEN_KEY);
-      }
-      setUser(null);
-      setWallets([]);
-      setMessages([buildGuestMessage()]);
-    } finally {
-      setSessionLoading(false);
-    }
-  }
 
   async function loadHistory() {
     setHistoryLoading(true);

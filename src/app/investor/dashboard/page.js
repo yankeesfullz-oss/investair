@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { ArrowDownToLine, Bitcoin, Building2, Copy, CreditCard, Gem, QrCode, ShieldCheck, WalletCards } from 'lucide-react';
+import { ArrowDownToLine, Building2, Copy, CreditCard, QrCode, ShieldCheck, WalletCards } from 'lucide-react';
 import { useInvestorAuth } from '@/components/Investor/AuthProvider';
 import EmptyStateCard from '@/components/ui/EmptyStateCard';
 import StatusBadge from '@/components/ui/StatusBadge';
@@ -31,6 +31,24 @@ function formatAddress(address) {
   }
 
   return `${address.slice(0, 10)}...${address.slice(-10)}`;
+}
+
+function CurrencyLogo({ currency, size = 20, className = '' }) {
+  const sources = {
+    BTC: '/bitcoin-mark.svg',
+    ETH: '/ethereum-mark.svg',
+    USDT: '/usdt-mark.svg',
+  };
+
+  return (
+    <img
+      src={sources[currency] || '/icon-192.svg'}
+      alt={`${currency} icon`}
+      width={size}
+      height={size}
+      className={className}
+    />
+  );
 }
 
 export default function InvestorDashboardPage() {
@@ -143,6 +161,9 @@ export default function InvestorDashboardPage() {
                 <div className="mt-2 text-2xl font-semibold text-slate-950">{formatAssetAmount(wallet.available, wallet.currency)}</div>
                 <div className="mt-1 text-sm text-slate-500">{wallet.label}</div>
               </div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950/95 shadow-sm">
+                <CurrencyLogo currency={wallet.currency} size={22} className="h-5 w-5" />
+              </div>
               <div className="rounded-full border border-pink-100 bg-pink-50 px-3 py-1 text-[11px] font-medium text-pink-700">Live wallet</div>
             </div>
             <div className="mt-4 grid gap-2 sm:grid-cols-2">
@@ -165,6 +186,7 @@ export default function InvestorDashboardPage() {
           <h2 className="max-w-2xl text-3xl font-semibold tracking-tight text-slate-900">Track balances, rental slots, withdrawals, and profit credits from one place.</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">Your wallet separates available and locked funds, and your dashboard surfaces active slots, daily profit credits, and pending withdrawal activity with live refresh.</p>
           <div className="mt-6 flex flex-wrap gap-3">
+            <Link href="/investor/deposit" className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800">Open deposit page</Link>
             <Link href="/investor/properties" className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800">Manage properties</Link>
             <Link href="/investor/withdrawals" className="rounded-2xl border border-slate-200 px-5 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">Request withdrawal</Link>
             <Link href="/investor/transactions" className="rounded-2xl border border-pink-100 bg-pink-50 px-5 py-3 text-sm font-medium text-pink-700 transition hover:bg-pink-100">Open transactions</Link>
@@ -263,6 +285,10 @@ export default function InvestorDashboardPage() {
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Send BTC or USDT to your assigned deposit address below. Once funds arrive, your balance can be used for future investment opportunities on the platform.</p>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Ethereum is also available for direct deposits using your dedicated ETH mainnet wallet.</p>
             <div className="mt-4 flex flex-wrap gap-3">
+              <Link href="/investor/deposit" className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">
+                <WalletCards className="h-4 w-4" />
+                Deposit page
+              </Link>
               <Link href="/investor/withdrawals" className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">
                 <CreditCard className="h-4 w-4" />
                 Withdraw funds
@@ -287,7 +313,7 @@ export default function InvestorDashboardPage() {
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900 text-white">
-                        {wallet.currency === 'BTC' ? <Bitcoin className="h-5 w-5" /> : wallet.currency === 'ETH' ? <Gem className="h-5 w-5" /> : <WalletCards className="h-5 w-5" />}
+                        <CurrencyLogo currency={wallet.currency} size={22} className="h-5 w-5" />
                       </div>
                       <div>
                         <div className="text-sm text-slate-500">Deposit wallet</div>

@@ -80,7 +80,10 @@ export default function InvestorAuthProvider({ children }) {
           return;
         }
 
-        const profile = await apiFetch('/api/users/me', { tokenStorageKey: INVESTOR_TOKEN_KEY }).catch(() => sessionUser);
+        const profile = await apiFetch('/api/users/sync', {
+          method: 'POST',
+          tokenStorageKey: INVESTOR_TOKEN_KEY,
+        }).catch(() => apiFetch('/api/users/me', { tokenStorageKey: INVESTOR_TOKEN_KEY })).catch(() => sessionUser);
         if (!mounted) {
           return;
         }
