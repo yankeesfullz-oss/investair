@@ -12,17 +12,52 @@ export default function AdminLayout({ children }) {
   return (
     <AuthProvider>
       <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900">
-        {showLayoutExtras && <AdminHeaderWrapper />}
-        <div className="flex flex-1">
-          {showLayoutExtras && <AdminSidebar />}
-          <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
-        </div>
+        <AdminShellContent showLayoutExtras={showLayoutExtras}>{children}</AdminShellContent>
       </div>
     </AuthProvider>
   );
 }
 
 function AdminHeaderWrapper() {
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
+
+  if (loading || !user) {
+    return null;
+  }
+
   return <AdminHeader onLogout={logout} user={user} />;
+}
+
+function AdminShellContent({ children, showLayoutExtras }) {
+  const { user, loading } = useAuth();
+
+  if (!showLayoutExtras) {
+    return <>{children}</>;
+  }
+
+  if (loading) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-8 text-sm text-slate-500">
+        Loading admin workspace...
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-8 text-sm text-slate-500">
+        Redirecting to admin login...
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <AdminHeaderWrapper />
+      <div className="flex flex-1">
+        <AdminSidebar />
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
+      </div>
+    </>
+  );
 }

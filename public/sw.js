@@ -1,4 +1,4 @@
-const CACHE_NAME = 'investair-shell-v2';
+const CACHE_NAME = 'investair-shell-v3';
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest',
@@ -31,6 +31,16 @@ self.addEventListener('fetch', (event) => {
   const requestUrl = new URL(event.request.url);
 
   if (requestUrl.origin !== self.location.origin) {
+    return;
+  }
+
+  if (
+    requestUrl.pathname.startsWith('/api/')
+    || requestUrl.pathname.startsWith('/auth/')
+    || requestUrl.pathname.startsWith('/investor/')
+    || requestUrl.pathname.startsWith('/admin/')
+    || requestUrl.searchParams.has('_rsc')
+  ) {
     return;
   }
 

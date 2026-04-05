@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { getAccessToken, useUser } from '@auth0/nextjs-auth0/client';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowUpRight,
@@ -14,7 +15,6 @@ import {
   X,
 } from 'lucide-react';
 
-import { useInvestorAuth } from '@/components/Investor/AuthProvider';
 import { apiFetch } from '@/lib/apiClient';
 import { openTawkSupport } from '@/lib/tawk';
 
@@ -106,13 +106,15 @@ export default function InvestAirChatWidget() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { user, wallets: providerWallets, loading: sessionLoading } = useInvestorAuth();
+  const { user: auth0User, isLoading: authLoading } = useUser();
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [sessionLoading, setSessionLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [user, setUser] = useState(null);
   const [wallets, setWallets] = useState([]);
   const [messages, setMessages] = useState([buildGuestMessage()]);
   const [chatSessionId, setChatSessionId] = useState('');
@@ -165,25 +167,75 @@ export default function InvestAirChatWidget() {
   }, []);
 
   useEffect(() => {
-    if (sessionLoading) {
-      return;
-    }
+    let active = true;
 
-    if (!user) {
-      setWallets([]);
-      setMessages([buildGuestMessage()]);
-      return;
-    }
-
-    setWallets(Array.isArray(providerWallets) ? providerWallets : []);
-    setMessages((current) => {
-      if (current.length > 1) {
-        return current;
+    async function loadSession() {
+      if (authLoading) {
+        return;
       }
 
-      return [buildInvestorMessage(user, Array.isArray(providerWallets) ? providerWallets : [])];
-    });
-  }, [pathname, providerWallets, sessionLoading, user]);
+      setSessionLoading(true);
+      setError('');
+
+      if (!auth0User) {
+        if (!active) {
+          return;
+        }
+
+        setUser(null);
+        setWallets([]);
+        setMessages([buildGuestMessage()]);
+        setSessionLoading(false);
+        return;
+      }
+
+      const sessionUser = {
+        email: auth0User.email,
+        fullName: auth0User.name || auth0User.nickname || 'Investor',
+        role: 'investor',
+        auth0Sub: auth0User.sub,
+      };
+
+      try {
+        const accessToken = await getAccessToken();
+        if (accessToken && typeof window !== 'undefined') {
+          localStorage.setItem(INVESTOR_TOKEN_KEY, accessToken);
+        }
+
+        const [profile, walletData] = await Promise.all([
+          apiFetch('/api/users/sync', { method: 'POST', tokenStorageKey: INVESTOR_TOKEN_KEY }).catch(() => apiFetch('/api/users/me', { tokenStorageKey: INVESTOR_TOKEN_KEY })).catch(() => sessionUser),
+          apiFetch('/api/wallets', { tokenStorageKey: INVESTOR_TOKEN_KEY }).catch(() => []),
+        ]);
+
+        if (!active) {
+          return;
+        }
+
+        const nextWallets = Array.isArray(walletData) ? walletData : [];
+        setUser(profile || sessionUser);
+        setWallets(nextWallets);
+        setMessages((current) => (current.length > 1 ? current : [buildInvestorMessage(profile || sessionUser, nextWallets)]));
+      } catch {
+        if (!active) {
+          return;
+        }
+
+        setUser(sessionUser);
+        setWallets([]);
+        setMessages([buildInvestorMessage(sessionUser, [])]);
+      } finally {
+        if (active) {
+          setSessionLoading(false);
+        }
+      }
+    }
+
+    void loadSession();
+
+    return () => {
+      active = false;
+    };
+  }, [auth0User, authLoading, pathname]);
 
   useEffect(() => {
     if (!isOpen || !user) {

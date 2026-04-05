@@ -25,6 +25,26 @@ function InvestorShell({ children }) {
     return <>{children}</>;
   }
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[linear-gradient(180deg,#fff7fb_0%,#ffffff_42%,#f8fbff_100%)] text-slate-900 p-6">
+        <div className="rounded-[2rem] border border-white/60 bg-white/80 p-8 text-sm text-slate-500 shadow-[0_20px_80px_rgba(15,23,42,0.06)] backdrop-blur-xl">
+          Loading your investor workspace...
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-[linear-gradient(180deg,#fff7fb_0%,#ffffff_42%,#f8fbff_100%)] text-slate-900 p-6">
+        <div className="rounded-[2rem] border border-white/60 bg-white/80 p-8 text-sm text-slate-500 shadow-[0_20px_80px_rgba(15,23,42,0.06)] backdrop-blur-xl">
+          Redirecting to investor login...
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#fff7fb_0%,#ffffff_42%,#f8fbff_100%)] text-slate-900">
       <div className="lg:flex">
@@ -53,13 +73,7 @@ function InvestorShell({ children }) {
                 </div>
               </Link>
             </div>
-            {loading ? (
-              <div className="rounded-[2rem] border border-white/60 bg-white/80 p-8 text-sm text-slate-500 shadow-[0_20px_80px_rgba(15,23,42,0.06)] backdrop-blur-xl">
-                Loading your investor workspace...
-              </div>
-            ) : (
-              children
-            )}
+            {children}
           </main>
         </div>
       </div>
