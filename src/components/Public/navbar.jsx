@@ -79,7 +79,7 @@ export default function Navbar() {
 							href="/invest"
 							onClick={() => setMode("invest")}
 							className={`inline-flex min-w-44 items-center justify-center rounded-full border-2 border-black px-6 py-3 text-center text-sm font-extrabold uppercase tracking-[0.18em] text-white shadow-[0_10px_30px_rgba(244,63,94,0.24)] transition hover:-translate-y-0.5 hover:bg-rose-600 ${
-								isInvestActive ? "bg-rose-600" : "bg-rose-500"
+								isInvestActive ? "bg-stone-900" : "bg-rose-500"
 							}`}
 							aria-pressed={isInvestActive}
 						>
