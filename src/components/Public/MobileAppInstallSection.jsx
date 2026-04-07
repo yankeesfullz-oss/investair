@@ -1,23 +1,14 @@
 "use client";
 
-import dynamic from 'next/dynamic';
+import { QRCodeSVG } from 'qrcode.react';
 import { CheckCircle2, QrCode, Smartphone, WalletCards } from 'lucide-react';
 import InstallAppButton from '@/components/Public/InstallAppButton';
+import { absoluteUrl } from '@/lib/site';
 import useAppInstallPrompt from '@/lib/useAppInstallPrompt';
-
-const QRCodeSVG = dynamic(
-  () => import('qrcode.react').then((module) => module.QRCodeSVG),
-  {
-    ssr: false,
-    loading: () => <div style={{ width: 170, height: 170 }} aria-hidden />,
-  }
-);
 
 export default function MobileAppInstallSection() {
   const installPrompt = useAppInstallPrompt();
-  const installUrl = typeof window === 'undefined'
-    ? null
-    : `${window.location.origin}/?source=mobile-install`;
+  const installUrl = absoluteUrl('/?source=mobile-install');
 
   return (
     <section className="bg-white px-4 pb-12 text-slate-900 sm:px-6 md:px-10 md:pb-16">
@@ -52,10 +43,7 @@ export default function MobileAppInstallSection() {
                 <WalletCards className="mt-1 h-5 w-5 shrink-0 text-rose-500" />
                 <span>Use the app to reach your wallet addresses, scan funding QR codes, and continue into the investor dashboard faster on mobile.</span>
               </div>
-              <div className="flex gap-3 rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
-                <CheckCircle2 className="mt-1 h-5 w-5 shrink-0 text-rose-500" />
-                <span>Installability is designed for the web app shell only. Investment outcomes remain projected and performance-based.</span>
-              </div>
+         
             </div>
           </div>
 
@@ -65,7 +53,7 @@ export default function MobileAppInstallSection() {
                 <QrCode className="h-4 w-4" />
                 Scan on your phone
               </div>
-                <div className="mt-5 flex items-center justify-center rounded-[1.75rem] bg-white p-4 shadow-sm">
+              <div className="mt-5 flex items-center justify-center rounded-[1.75rem] bg-white p-4 shadow-sm">
                 {installUrl ? (
                   <QRCodeSVG value={installUrl} size={170} bgColor="transparent" fgColor="#0f172a" />
                 ) : null}

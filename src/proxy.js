@@ -1,4 +1,4 @@
-import { auth0 } from "./lib/auth0";
+import { NextResponse } from "next/server";
 import { normalizeCountryCode } from "./lib/countryConfig";
 
 const COUNTRY_COOKIE = "user-country";
@@ -18,7 +18,7 @@ function detectCountry(request) {
 }
 
 export async function proxy(request) {
-  const response = await auth0.middleware(request);
+  const response = NextResponse.next();
   const country = detectCountry(request);
 
   if (request.cookies.get(COUNTRY_COOKIE)?.value !== country) {

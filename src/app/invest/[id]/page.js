@@ -444,23 +444,13 @@ export default async function InvestmentPropertyDetailPage({ params, searchParam
                       </div>
                     </div>
 
-                    {property.sourceUrl ? (
-                      <div className="flex items-start gap-3 rounded-xl sm:rounded-2xl bg-slate-50 p-3 sm:p-4">
-                        <ArrowUpRight size={18} className="mt-0.5 text-rose-500 shrink-0" />
-                        <div>
-                          <p className="text-sm font-semibold text-slate-950">Best next step</p>
-                          <p className="mt-1 text-sm text-slate-600">Review the listing details, then sign up or sign in to Investair to get started.</p>
-                        </div>
+                    <div className="flex items-start gap-3 rounded-xl sm:rounded-2xl bg-slate-50 p-3 sm:p-4">
+                      <ArrowUpRight size={18} className="mt-0.5 text-rose-500 shrink-0" />
+                      <div>
+                        <p className="text-sm font-semibold text-slate-950">Best next step</p>
+                        <p className="mt-1 text-sm text-slate-600">Sign up or sign in to Investair to get started with this property.</p>
                       </div>
-                    ) : (
-                      <div className="flex items-start gap-3 rounded-xl sm:rounded-2xl bg-slate-50 p-3 sm:p-4">
-                        <ArrowUpRight size={18} className="mt-0.5 text-rose-500 shrink-0" />
-                        <div>
-                          <p className="text-sm font-semibold text-slate-950">Best next step</p>
-                          <p className="mt-1 text-sm text-slate-600">Sign up or sign in to Investair to get started with this property.</p>
-                        </div>
-                      </div>
-                    )}
+                    </div>
 
                     <div className="flex items-start gap-3 rounded-xl sm:rounded-2xl bg-slate-50 p-3 sm:p-4">
                       <CalendarRange size={18} className="mt-0.5 text-rose-500 shrink-0" />
@@ -576,17 +566,6 @@ export default async function InvestmentPropertyDetailPage({ params, searchParam
 
               <div className="mt-6 sm:mt-8 space-y-3">
                 <InvestmentCheckoutCard property={property} monthlyPrice={monthlyPrice} initialMonths={selectedDuration} />
-                {property.sourceUrl ? (
-                  <Link
-                    href={property.sourceUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl sm:rounded-2xl bg-slate-900 px-5 py-3.5 text-sm font-medium text-white transition hover:bg-slate-800"
-                  >
-                    Open source listing
-                    <ArrowUpRight size={16} />
-                  </Link>
-                ) : null}
                 <Link
                   href="/invest"
                   className="inline-flex w-full items-center justify-center rounded-xl sm:rounded-2xl border border-slate-200 px-5 py-3.5 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"

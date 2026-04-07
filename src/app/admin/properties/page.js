@@ -7,14 +7,17 @@ import PropertyEditor from '@/components/Admin/PropertyEditor';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { apiFetch } from '@/lib/apiClient';
 import { formatCurrency } from '@/lib/dashboardFormatting';
+import { normalizeBackendProperty } from '@/lib/investmentPropertyUtils';
 
 function getPropertyPreviewImage(property) {
-  if (property?.coverImage) {
-    return property.coverImage;
+  const normalized = normalizeBackendProperty(property) || property || {};
+
+  if (normalized?.coverImage) {
+    return normalized.coverImage;
   }
 
-  if (Array.isArray(property?.images) && property.images.length > 0) {
-    return property.images[0];
+  if (Array.isArray(normalized?.images) && normalized.images.length > 0) {
+    return normalized.images[0];
   }
 
   return '';
@@ -134,6 +137,16 @@ export default function AdminPropertiesPage() {
   }
 
   async function handleAutofillDraft(payload) {
+    // Quick client-side preflight: ensure an admin token exists to avoid 403s
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+      if (!token) {
+        throw new Error('Admin authentication required. Sign in to continue.');
+      }
+    } catch (err) {
+      return Promise.reject(err);
+    }
+
     return apiFetch('/api/properties/autofill', {
       method: 'POST',
       tokenStorageKey: 'admin_token',

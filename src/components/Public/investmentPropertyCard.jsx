@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, Bath, BedDouble, MapPin, ShieldCheck, TrendingUp } from "lucide-react";
-import { parseInvestmentPrice } from "@/lib/investmentPropertyUtils";
+import { Bath, BedDouble, MapPin, ShieldCheck, TrendingUp } from "lucide-react";
+import { parseInvestmentPrice, resolvePropertyImages } from "@/lib/investmentPropertyUtils";
 import { getPropertyPath } from "@/lib/site";
 
 function formatAnnualizedValue(monthlyPrice) {
@@ -27,9 +27,11 @@ export default function InvestmentPropertyCard({ property, highlighted = false, 
   const detailHref = months
     ? `${canonicalPropertyPath}?months=${months}`
     : canonicalPropertyPath;
-  const propertyImages = Array.isArray(property.images) && property.images.length > 0
-    ? property.images
-    : [property.image].filter(Boolean);
+  const propertyImages = resolvePropertyImages([
+    property.coverImage,
+    ...(Array.isArray(property.images) ? property.images : []),
+    property.image,
+  ]);
   const bedLabel = property.beds || "Bed info on listing";
   const bathLabel = property.baths || "Bath info on listing";
   const durationLabel = Array.isArray(property.allowedDurations) && property.allowedDurations.length > 0
@@ -135,17 +137,6 @@ export default function InvestmentPropertyCard({ property, highlighted = false, 
           >
             View details
           </Link>
-          {property.sourceUrl ? (
-            <Link
-              href={property.sourceUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-5 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-            >
-              Open source listing
-              <ArrowUpRight size={16} />
-            </Link>
-          ) : null}
         </div>
       </div>
     </article>

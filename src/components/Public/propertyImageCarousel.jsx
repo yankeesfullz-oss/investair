@@ -3,15 +3,16 @@
 import { useRef, useState } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { resolvePropertyImages } from "@/lib/investmentPropertyUtils";
 
 const SWIPE_THRESHOLD = 45;
 
 export default function PropertyImageCarousel({ images, propertyName }) {
+  const resolvedImages = resolvePropertyImages(Array.isArray(images) ? images : []);
+  const totalImages = resolvedImages.length;
   const [activeIndex, setActiveIndex] = useState(0);
   const touchStartX = useRef(null);
   const touchDeltaX = useRef(0);
-
-  const totalImages = images.length;
 
   const goToIndex = (nextIndex) => {
     if (!totalImages) {
@@ -68,7 +69,7 @@ export default function PropertyImageCarousel({ images, propertyName }) {
         onTouchEnd={handleTouchEnd}
       >
         <Image
-          src={images[activeIndex]}
+          src={resolvedImages[activeIndex]}
           alt={`${propertyName} photo ${activeIndex + 1}`}
           fill
           priority={activeIndex === 0}
@@ -76,7 +77,7 @@ export default function PropertyImageCarousel({ images, propertyName }) {
           className="object-cover"
         />
 
-        {totalImages > 1 && (
+        {totalImages > 1 ? (
           <>
             <div className="absolute bottom-4 right-4 rounded-full bg-slate-950/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-sm">
               {activeIndex + 1} / {totalImages}
@@ -101,13 +102,13 @@ export default function PropertyImageCarousel({ images, propertyName }) {
               </button>
             </div>
           </>
-        )}
+        ) : null}
       </div>
 
-      {totalImages > 1 && (
+      {totalImages > 1 ? (
         <div className="space-y-3 px-4 pb-4 sm:px-6 sm:pb-6">
           <div className="flex justify-center gap-2 md:hidden">
-            {images.map((_, index) => (
+            {resolvedImages.map((_, index) => (
               <button
                 key={`${propertyName}-dot-${index}`}
                 type="button"
@@ -121,7 +122,7 @@ export default function PropertyImageCarousel({ images, propertyName }) {
           </div>
 
           <div className="flex gap-3 overflow-x-auto pb-1">
-            {images.map((imageUrl, index) => (
+            {resolvedImages.map((imageUrl, index) => (
               <button
                 key={`${propertyName}-thumb-${index}`}
                 type="button"
@@ -144,7 +145,7 @@ export default function PropertyImageCarousel({ images, propertyName }) {
             ))}
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

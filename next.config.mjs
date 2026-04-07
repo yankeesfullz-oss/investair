@@ -16,10 +16,10 @@ const nextConfig = {
         protocol: "https",
         hostname: "photos.zillowstatic.com",
       },
-        {
-          protocol: "https",
-          hostname: "t.teads.tv",
-        },
+      {
+        protocol: "https",
+        hostname: "**.fl.yelpcdn.com",
+      },
     ],
   },
 };

@@ -1,7 +1,6 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { getAccessToken, useUser } from '@auth0/nextjs-auth0/client';
 import { usePathname, useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/apiClient';
 
@@ -9,6 +8,8 @@ const InvestorAuthContext = createContext({
   user: null,
   wallets: [],
   loading: true,
+  login: async () => null,
+  signup: async () => null,
   logout: () => {},
   refreshWallets: async () => [],
 });
@@ -20,7 +21,6 @@ export function useInvestorAuth() {
 }
 
 export default function InvestorAuthProvider({ children }) {
-  const { user: auth0User, isLoading: authLoading } = useUser();
   const [user, setUser] = useState(null);
   const [wallets, setWallets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,21 +28,71 @@ export default function InvestorAuthProvider({ children }) {
   const pathname = usePathname();
   const isAuthPage = pathname?.startsWith('/investor/login') || pathname?.startsWith('/investor/signup');
 
+  async function loadSessionFromToken() {
+    const [profile, nextWallets] = await Promise.all([
+      apiFetch('/api/users/me', { tokenStorageKey: INVESTOR_TOKEN_KEY }),
+      apiFetch('/api/wallets', { tokenStorageKey: INVESTOR_TOKEN_KEY }).catch(() => []),
+    ]);
+
+    setUser(profile || null);
+    setWallets(Array.isArray(nextWallets) ? nextWallets : []);
+    return profile;
+  }
+
   async function refreshWallets() {
     const nextWallets = await apiFetch('/api/wallets', { tokenStorageKey: INVESTOR_TOKEN_KEY });
     setWallets(nextWallets);
     return nextWallets;
   }
 
+  async function login({ email, password }) {
+    const response = await apiFetch('/api/auth/login', {
+      method: 'POST',
+      tokenStorageKey: INVESTOR_TOKEN_KEY,
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (typeof window !== 'undefined' && response?.token) {
+      localStorage.setItem(INVESTOR_TOKEN_KEY, response.token);
+    }
+
+    if (response?.user) {
+      setUser(response.user);
+    }
+
+    await loadSessionFromToken();
+    return response;
+  }
+
+  async function signup({ fullName, email, password, confirmPassword }) {
+    const response = await apiFetch('/api/auth/signup', {
+      method: 'POST',
+      tokenStorageKey: INVESTOR_TOKEN_KEY,
+      body: JSON.stringify({ fullName, email, password, confirmPassword }),
+    });
+
+    if (typeof window !== 'undefined' && response?.token) {
+      localStorage.setItem(INVESTOR_TOKEN_KEY, response.token);
+    }
+
+    if (response?.user) {
+      setUser(response.user);
+    }
+
+    await loadSessionFromToken();
+    return response;
+  }
+
   useEffect(() => {
     let mounted = true;
 
     async function load() {
-      if (typeof window === 'undefined' || authLoading) {
+      if (typeof window === 'undefined') {
         return;
       }
 
-      if (!auth0User) {
+      const token = localStorage.getItem(INVESTOR_TOKEN_KEY);
+      if (!token) {
         localStorage.removeItem(INVESTOR_TOKEN_KEY);
         if (mounted) {
           setUser(null);
@@ -55,55 +105,21 @@ export default function InvestorAuthProvider({ children }) {
         return;
       }
 
-      const sessionUser = {
-        email: auth0User.email,
-        fullName: auth0User.name || auth0User.nickname || 'Investor',
-        role: 'investor',
-        auth0Sub: auth0User.sub,
-      };
-
       try {
-        const accessToken = await getAccessToken();
-        if (accessToken) {
-          localStorage.setItem(INVESTOR_TOKEN_KEY, accessToken);
-        }
-
-        if (!accessToken) {
-          if (!mounted) {
-            return;
-          }
-          setUser(sessionUser);
-          setWallets([]);
-          if (isAuthPage) {
-            router.replace('/investor/dashboard');
-          }
-          return;
-        }
-
-        const profile = await apiFetch('/api/users/sync', {
-          method: 'POST',
-          tokenStorageKey: INVESTOR_TOKEN_KEY,
-        }).catch(() => apiFetch('/api/users/me', { tokenStorageKey: INVESTOR_TOKEN_KEY })).catch(() => sessionUser);
+        const profile = await loadSessionFromToken();
         if (!mounted) {
           return;
         }
-
-        setUser(profile);
-        const nextWallets = await apiFetch('/api/wallets', { tokenStorageKey: INVESTOR_TOKEN_KEY }).catch(() => []);
-        if (!mounted) {
-          return;
-        }
-        setWallets(nextWallets);
 
         if (isAuthPage) {
-          router.replace('/investor/dashboard');
+          router.replace(profile?.role === 'investor' ? '/investor/dashboard' : '/');
         }
       } catch {
         if (!mounted) {
           return;
         }
 
-        setUser(sessionUser);
+        setUser(null);
         setWallets([]);
 
         if (typeof window !== 'undefined') {
@@ -120,19 +136,15 @@ export default function InvestorAuthProvider({ children }) {
       }
     }
 
-    load();
+    void load();
     return () => {
       mounted = false;
     };
-  }, [auth0User, authLoading, isAuthPage, pathname, router]);
+  }, [isAuthPage, pathname, router]);
 
   function logout() {
     if (typeof window !== 'undefined') {
       localStorage.removeItem(INVESTOR_TOKEN_KEY);
-      const returnTo = new URL('/investor/login', window.location.origin).toString();
-      const logoutUrl = `/auth/logout?${new URLSearchParams({ returnTo }).toString()}`;
-      window.location.assign(logoutUrl);
-      return;
     }
     setUser(null);
     setWallets([]);
@@ -140,7 +152,7 @@ export default function InvestorAuthProvider({ children }) {
   }
 
   return (
-    <InvestorAuthContext.Provider value={{ user, wallets, loading, logout, refreshWallets }}>
+    <InvestorAuthContext.Provider value={{ user, wallets, loading, login, signup, logout, refreshWallets }}>
       {children}
     </InvestorAuthContext.Provider>
   );

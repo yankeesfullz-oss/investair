@@ -1,4 +1,11 @@
 const FALLBACK_PROPERTY_IMAGE = "https://res.cloudinary.com/daiii0a2n/image/upload/v1774103631/homes-scraper/rwml3x1ds15jre3tf9el.webp";
+const TRUSTED_IMAGE_HOST_PATTERNS = [
+  /^res\.cloudinary\.com$/i,
+  /^images\.unsplash\.com$/i,
+  /^photos\.zillowstatic\.com$/i,
+  /^s3-media\d+\.fl\.yelpcdn\.com$/i,
+  /^.*\.fl\.yelpcdn\.com$/i,
+];
 
 function normalizeWhitespace(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
@@ -13,6 +20,30 @@ function toSlug(value) {
 
 function compactList(values) {
   return [...new Set((values || []).map((value) => normalizeWhitespace(value)).filter(Boolean))];
+}
+
+function isTrustedImageUrl(value) {
+  const normalizedValue = normalizeWhitespace(value);
+  if (!normalizedValue) {
+    return false;
+  }
+
+  try {
+    const parsedUrl = new URL(normalizedValue);
+    if (!['https:', 'http:'].includes(parsedUrl.protocol)) {
+      return false;
+    }
+
+    const hostname = parsedUrl.hostname.toLowerCase();
+    return TRUSTED_IMAGE_HOST_PATTERNS.some((pattern) => pattern.test(hostname));
+  } catch {
+    return false;
+  }
+}
+
+function resolvePropertyImages(values) {
+  const images = compactList(values).filter(isTrustedImageUrl);
+  return images.length > 0 ? images : [FALLBACK_PROPERTY_IMAGE];
 }
 
 function formatUsd(value) {
@@ -209,8 +240,7 @@ export function normalizeBackendProperty(record) {
   const projectedAnnualPayoutAmount = Number(record.projectedAnnualPayoutAmount || projectedMonthlyPayoutAmount * 12);
   const description = normalizeWhitespace(record.description || record.investorSummary || "Property details available in the live Investair inventory.");
   const summary = buildSummary(record, description);
-  const images = compactList([record.coverImage, ...(Array.isArray(record.images) ? record.images : [])]);
-  const resolvedImages = images.length > 0 ? images : [FALLBACK_PROPERTY_IMAGE];
+  const resolvedImages = resolvePropertyImages([record.coverImage, ...(Array.isArray(record.images) ? record.images : [])]);
   const locationLabel = normalizeWhitespace(record.location || [city, state].filter(Boolean).join(", "));
   const investorHeadline = normalizeWhitespace(
     record.investorHeadline || `${locationLabel || state || "Prime market"} income opportunity`
@@ -337,10 +367,34 @@ export function getInvestmentOverview(properties) {
   const monthlyPrices = normalizedProperties
     .map((property) => parseInvestmentPrice(property.investmentPricePerMonth))
     .filter((value) => Number.isFinite(value) && value > 0);
+  const dailyPayouts = normalizedProperties
+    .map((property) => {
+      const currentDailyPayoutAmount = Number(property?.currentDailyPayoutAmount || 0);
+      if (Number.isFinite(currentDailyPayoutAmount) && currentDailyPayoutAmount > 0) {
+        return currentDailyPayoutAmount;
+      }
+
+      const projectedMonthlyPayoutAmount = Number(property?.projectedMonthlyPayoutAmount || 0);
+      if (Number.isFinite(projectedMonthlyPayoutAmount) && projectedMonthlyPayoutAmount > 0) {
+        return projectedMonthlyPayoutAmount / 30;
+      }
+
+      return 0;
+    })
+    .filter((value) => Number.isFinite(value) && value > 0);
+
+  const averageMonthlyEntry = monthlyPrices.length > 0
+    ? monthlyPrices.reduce((sum, value) => sum + value, 0) / monthlyPrices.length
+    : 0;
+  const averageDailyPayout = dailyPayouts.length > 0
+    ? dailyPayouts.reduce((sum, value) => sum + value, 0) / dailyPayouts.length
+    : 0;
 
   return {
     propertyCount: normalizedProperties.length,
     cities: new Set(normalizedProperties.map((property) => `${property.city},${property.state}`)).size,
+    averageMonthlyEntry,
+    averageDailyPayout,
     lowestMonthlyPrice: monthlyPrices.length > 0 ? Math.min(...monthlyPrices) : 0,
     highestMonthlyPrice: monthlyPrices.length > 0 ? Math.max(...monthlyPrices) : 0,
   };
@@ -373,3 +427,5 @@ export function getBestDealProperties(properties, options = {}) {
 
   return filteredProperties;
 }
+
+export { isTrustedImageUrl, resolvePropertyImages };

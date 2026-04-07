@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, Building2, Landmark, MapPin, TrendingUp, ShieldCheck } from "lucide-react";
-import InvestmentPropertyCard from "@/components/Public/investmentPropertyCard";
+import InvestInventoryExplorer from "@/components/Public/InvestInventoryExplorer";
 import {
   getInvestmentProperties,
   getInvestmentOverview,
@@ -30,9 +30,26 @@ export default async function InvestPage({ searchParams }) {
   const selectedPropertyId = params?.property;
   const months = params?.months;
   const properties = await getInvestmentProperties();
-  const selectedProperty = matchInvestmentProperty(properties, selectedPropertyId);
-  const sortedProperties = sortInvestmentProperties(properties, selectedProperty?.id || selectedPropertyId);
   const overview = getInvestmentOverview(properties);
+  // If city/state search params are provided, filter inventory to that market
+  const cityQuery = params?.city ? String(params.city).trim().toLowerCase() : '';
+  const stateQuery = params?.state ? String(params.state).trim().toLowerCase() : '';
+  const initialLocationQuery = [params?.city, params?.state].filter(Boolean).join(", ");
+
+  const filteredByLocation = (cityQuery || stateQuery)
+    ? properties.filter((p) => {
+      const city = String(p.city || '').trim().toLowerCase();
+      const state = String(p.state || '').trim().toLowerCase();
+
+      const cityMatch = cityQuery ? city.includes(cityQuery) : true;
+      const stateMatch = stateQuery ? state.includes(stateQuery) : true;
+      return cityMatch && stateMatch;
+    })
+    : properties;
+
+  const effectiveProperties = filteredByLocation;
+  const selectedProperty = matchInvestmentProperty(properties, selectedPropertyId);
+  const sortedProperties = sortInvestmentProperties(effectiveProperties, selectedProperty?.id || selectedPropertyId);
 
   return (
     <main className="min-h-screen bg-white px-4 py-8 text-stone-950 sm:px-6 lg:px-8">
@@ -70,8 +87,8 @@ export default async function InvestPage({ searchParams }) {
             {[
               { label: "Active Listings", val: overview.propertyCount, icon: <Building2 className="text-rose-500" size={20}/> },
               { label: "US Markets", val: overview.cities, icon: <MapPin className="text-rose-500" size={20}/> },
-              { label: "Estimated Monthly Entry", val: formatUsd(overview.lowestMonthlyPrice), icon: <ShieldCheck className="text-rose-500" size={20}/> },
-              { label: "Illustrative Daily Upside", val: formatUsd(overview.highestMonthlyPrice / 30), icon: <TrendingUp className="text-rose-500" size={20}/> },
+              { label: "Estimated Monthly Entry", val: formatUsd(overview.averageMonthlyEntry), icon: <ShieldCheck className="text-rose-500" size={20}/> },
+              { label: "Illustrative Daily Upside", val: formatUsd(overview.averageDailyPayout), icon: <TrendingUp className="text-rose-500" size={20}/> },
             ].map((stat, i) => (
               <div key={i} className="group rounded-3xl bg-white p-6 shadow-sm ring-1 ring-stone-100 transition-hover hover:shadow-md">
                 <div className="mb-4 flex items-center justify-between">
@@ -144,35 +161,12 @@ export default async function InvestPage({ searchParams }) {
         </section>
 
         {/* INVENTORY LIST */}
-        <section className="space-y-6">
-          <div className="flex flex-col gap-3 border-b border-stone-100 pb-6 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h2 className="text-3xl font-bold text-stone-950 tracking-tight">Available US Opportunities</h2>
-              <p className="mt-1 text-stone-500">Curated listings with duration-based access to projected short-stay rental cashflow.</p>
-            </div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-stone-100 px-4 py-2 text-sm font-bold text-stone-600">
-              <div className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
-              {sortedProperties.length} Opportunities Live
-            </div>
-          </div>
-
-          {sortedProperties.length > 0 ? (
-            <div className="grid gap-8 lg:grid-cols-2 xl:grid-cols-3">
-              {sortedProperties.map((property) => (
-                <InvestmentPropertyCard
-                  key={property.id}
-                  property={property}
-                  highlighted={property.id === selectedProperty?.id}
-                  months={months}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-[2rem] border border-stone-100 bg-stone-50 p-8 text-sm text-stone-600">
-              No live investment opportunities are published yet.
-            </div>
-          )}
-        </section>
+        <InvestInventoryExplorer
+          properties={sortedProperties}
+          months={months}
+          selectedPropertyId={selectedProperty?.id}
+          initialLocationQuery={initialLocationQuery}
+        />
       </section>
     </main>
   );

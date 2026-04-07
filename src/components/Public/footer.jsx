@@ -13,6 +13,7 @@ export default function Footer() {
 								alt="Investair"
 								width={150}
 								height={44}
+								style={{ width: "auto" }}
 								className="h-10 w-auto"
 							/>
 						</Link>

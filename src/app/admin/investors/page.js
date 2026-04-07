@@ -51,8 +51,7 @@ export default function InvestorsPage() {
                   <div className="text-sm text-slate-500">{u.email}</div>
                   <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
                     <span className="rounded-full bg-slate-50 px-3 py-1">Joined {u.createdAt ? formatDateTime(u.createdAt) : 'Unknown'}</span>
-                    <span className="rounded-full bg-slate-50 px-3 py-1">Last login {u.lastLoginAt ? formatDateTime(u.lastLoginAt) : 'Not synced yet'}</span>
-                    <span className={`rounded-full px-3 py-1 ${u.auth0Sub ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>{u.auth0Sub ? 'Auth0 synced' : 'No Auth0 subject yet'}</span>
+                    <span className="rounded-full bg-slate-50 px-3 py-1">Last login {u.lastLoginAt ? formatDateTime(u.lastLoginAt) : 'No login yet'}</span>
                   </div>
                 </div>
                 <div className="text-sm text-slate-500">Role: {u.role}</div>

@@ -311,6 +311,8 @@ export default function PropertyEditor({ property, mode = "edit", busy = false, 
     try {
       const result = await onAutofill(toPayload(formState));
       const nextValues = result && typeof result === "object" ? result : {};
+      const filledKeys = Object.keys(nextValues);
+      const filledInvestorCopy = ["investorHeadline", "investorSummary"].filter((key) => filledKeys.includes(key));
 
       setFormState((current) => {
         const mergedState = { ...current };
@@ -339,7 +341,13 @@ export default function PropertyEditor({ property, mode = "edit", busy = false, 
         return mergedState;
       });
 
-      setAutofillMessage("Blank property fields were filled from the current draft.");
+      if (filledInvestorCopy.length === 2 && filledKeys.length === 2) {
+        setAutofillMessage("Missing investor headline and summary were drafted from the property description.");
+      } else if (filledInvestorCopy.length > 0) {
+        setAutofillMessage("Blank fields were filled, including investor-facing copy drafted from the property description.");
+      } else {
+        setAutofillMessage("Blank property fields were filled from the current draft.");
+      }
     } catch (error) {
       setAutofillError(error.message || "Unable to fill blank fields right now.");
     } finally {
@@ -371,7 +379,7 @@ export default function PropertyEditor({ property, mode = "edit", busy = false, 
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-sm font-semibold text-slate-900">AI draft assist</p>
-            <p className="mt-1 text-sm text-slate-600">Fill blanks automatically populates missing property details by combining smart pricing heuristics with Gemini text generation for intelligent data completion.</p>
+            <p className="mt-1 text-sm text-slate-600">Fill blanks uses the property description, listing facts, and smart pricing heuristics to draft missing investor headline and summary copy alongside any other confident metadata.</p>
           </div>
           <button
             type="button"

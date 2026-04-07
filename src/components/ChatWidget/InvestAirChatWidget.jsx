@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { getAccessToken, useUser } from '@auth0/nextjs-auth0/client';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowUpRight,
@@ -106,7 +105,6 @@ export default function InvestAirChatWidget() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { user: auth0User, isLoading: authLoading } = useUser();
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -170,14 +168,12 @@ export default function InvestAirChatWidget() {
     let active = true;
 
     async function loadSession() {
-      if (authLoading) {
-        return;
-      }
-
       setSessionLoading(true);
       setError('');
 
-      if (!auth0User) {
+      const token = typeof window !== 'undefined' ? localStorage.getItem(INVESTOR_TOKEN_KEY) : '';
+
+      if (!token) {
         if (!active) {
           return;
         }
@@ -189,21 +185,9 @@ export default function InvestAirChatWidget() {
         return;
       }
 
-      const sessionUser = {
-        email: auth0User.email,
-        fullName: auth0User.name || auth0User.nickname || 'Investor',
-        role: 'investor',
-        auth0Sub: auth0User.sub,
-      };
-
       try {
-        const accessToken = await getAccessToken();
-        if (accessToken && typeof window !== 'undefined') {
-          localStorage.setItem(INVESTOR_TOKEN_KEY, accessToken);
-        }
-
         const [profile, walletData] = await Promise.all([
-          apiFetch('/api/users/sync', { method: 'POST', tokenStorageKey: INVESTOR_TOKEN_KEY }).catch(() => apiFetch('/api/users/me', { tokenStorageKey: INVESTOR_TOKEN_KEY })).catch(() => sessionUser),
+          apiFetch('/api/users/me', { tokenStorageKey: INVESTOR_TOKEN_KEY }),
           apiFetch('/api/wallets', { tokenStorageKey: INVESTOR_TOKEN_KEY }).catch(() => []),
         ]);
 
@@ -212,17 +196,18 @@ export default function InvestAirChatWidget() {
         }
 
         const nextWallets = Array.isArray(walletData) ? walletData : [];
-        setUser(profile || sessionUser);
+        setUser(profile || null);
         setWallets(nextWallets);
-        setMessages((current) => (current.length > 1 ? current : [buildInvestorMessage(profile || sessionUser, nextWallets)]));
+        setMessages((current) => (current.length > 1 ? current : [buildInvestorMessage(profile || null, nextWallets)]));
       } catch {
         if (!active) {
           return;
         }
 
-        setUser(sessionUser);
+        localStorage.removeItem(INVESTOR_TOKEN_KEY);
+        setUser(null);
         setWallets([]);
-        setMessages([buildInvestorMessage(sessionUser, [])]);
+        setMessages([buildGuestMessage()]);
       } finally {
         if (active) {
           setSessionLoading(false);
@@ -235,7 +220,7 @@ export default function InvestAirChatWidget() {
     return () => {
       active = false;
     };
-  }, [auth0User, authLoading, pathname]);
+  }, [pathname]);
 
   useEffect(() => {
     if (!isOpen || !user) {

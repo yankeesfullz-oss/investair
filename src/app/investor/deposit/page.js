@@ -20,10 +20,6 @@ const WALLET_META = {
   USDT: { label: 'Tether USD', network: 'TRC20 / Tron' },
 };
 
-function isUsableWalletAddress(address) {
-  return Boolean(address && !String(address).startsWith('placeholder-'));
-}
-
 export default function InvestorDepositPage() {
   const { wallets, loading } = useInvestorAuth();
   const [settings, setSettings] = useState(null);
@@ -73,16 +69,14 @@ export default function InvestorDepositPage() {
 
   const depositCards = useMemo(() => ['BTC', 'ETH', 'USDT'].map((currency) => {
     const userWallet = wallets.find((wallet) => wallet.currency === currency) || null;
-    const fallback = settings?.[currency] || WALLET_META[currency];
-    const address = isUsableWalletAddress(userWallet?.address) ? userWallet.address : (fallback?.address || '');
-    const source = isUsableWalletAddress(userWallet?.address) ? 'Your wallet' : 'Platform fallback wallet';
+    const sharedWallet = settings?.[currency] || WALLET_META[currency];
+    const address = userWallet?.address || sharedWallet?.address || '';
 
     return {
       currency,
-      label: fallback?.label || WALLET_META[currency].label,
-      network: fallback?.network || WALLET_META[currency].network,
+      label: sharedWallet?.label || WALLET_META[currency].label,
+      network: sharedWallet?.network || WALLET_META[currency].network,
       address,
-      source,
       availableBalance: Number(userWallet?.availableBalance || 0),
     };
   }), [settings, wallets]);
@@ -96,7 +90,7 @@ export default function InvestorDepositPage() {
       <section className="rounded-[2.5rem] border border-white/70 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(255,247,251,0.9))] p-6 shadow-[0_20px_80px_rgba(15,23,42,0.07)]">
         <div className="inline-flex rounded-full border border-pink-100 bg-pink-50 px-4 py-2 text-xs uppercase tracking-[0.24em] text-pink-600">Deposit center</div>
         <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">Fund your wallet with BTC, ETH, or USDT.</h1>
-        <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">If you already have crypto, scan the QR code or copy the address below and deposit directly. If you do not have crypto yet, use the MoonPay buy button for the currency you want and send it to the wallet address shown here.</p>
+        <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">If you already have crypto, scan the QR code or copy the shared deposit address below. If you do not have crypto yet, use the MoonPay buy button for the currency you want and send it to the address shown here.</p>
         <div className="mt-5 flex flex-wrap gap-3">
           <Link href="/investor/dashboard" className="rounded-2xl border border-slate-200 px-5 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">Back to dashboard</Link>
           <Link href="/investor/transactions" className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800">Open transactions</Link>
@@ -120,7 +114,7 @@ export default function InvestorDepositPage() {
                   <div className="mt-2 text-2xl font-semibold text-slate-950">{card.currency}</div>
                   <div className="mt-1 text-sm text-slate-500">{card.label} · {card.network}</div>
                 </div>
-                <span className={`rounded-full px-3 py-1 text-[11px] font-medium ${card.source === 'Your wallet' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>{card.source}</span>
+                <span className="rounded-full bg-amber-50 px-3 py-1 text-[11px] font-medium text-amber-700">Shared admin deposit address</span>
               </div>
 
               <div className="mt-5 rounded-3xl border border-slate-100 bg-slate-50 p-4">
@@ -174,7 +168,7 @@ export default function InvestorDepositPage() {
           </div>
           <div>
             <h2 className="text-xl font-semibold text-slate-900">How to deposit</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">If you already have bitcoin, ethereum, or USDT, scan the wallet address QR code above or copy the address and deposit directly. If you do not have crypto yet, use the MoonPay buy button beside the currency you want and complete the purchase to the wallet address shown on this page.</p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">If you already have bitcoin, ethereum, or USDT, scan the QR code above or copy the shared deposit address for that currency and send funds there. If you do not have crypto yet, use the MoonPay buy button beside the currency you want and complete the purchase to the address shown on this page.</p>
           </div>
         </div>
       </section>

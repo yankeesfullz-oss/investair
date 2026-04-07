@@ -1,5 +1,4 @@
 let cachedBackendUrl = null;
-let auth0AccessTokenRetryAt = 0;
 const missingEndpointRetryAt = new Map();
 
 function createApiError(message, status, body = null) {
@@ -7,30 +6,6 @@ function createApiError(message, status, body = null) {
   err.status = status;
   err.body = body;
   return err;
-}
-
-async function getAuth0AccessToken() {
-  if (typeof window === 'undefined') return null;
-
-  if (Date.now() < auth0AccessTokenRetryAt) {
-    return null;
-  }
-
-  try {
-    const res = await fetch('/auth/access-token', { credentials: 'include' });
-    if (!res.ok) {
-      if (res.status === 404 || res.status === 401) {
-        auth0AccessTokenRetryAt = Date.now() + 60_000;
-      }
-      return null;
-    }
-    const data = await res.json();
-    auth0AccessTokenRetryAt = 0;
-    return data?.token || null;
-  } catch {
-    auth0AccessTokenRetryAt = Date.now() + 30_000;
-    return null;
-  }
 }
 
 export async function getBackendUrl() {
@@ -58,12 +33,6 @@ export async function apiFetch(path, options = {}) {
   let token = null;
   if (typeof window !== 'undefined') {
     token = localStorage.getItem(tokenStorageKey);
-    if (!token) {
-      token = await getAuth0AccessToken();
-      if (token && tokenStorageKey) {
-        localStorage.setItem(tokenStorageKey, token);
-      }
-    }
   }
 
   const isFormData = typeof FormData !== 'undefined' && restOptions.body instanceof FormData;

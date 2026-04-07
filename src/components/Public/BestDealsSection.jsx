@@ -35,7 +35,7 @@ export default async function BestDealsSection() {
                             Top performing opportunities
                         </h2>
                         <p className="mt-4 text-lg leading-8 text-slate-600">
-                            Explore properties curated by performance. We've highlighted high-demand markets and low-barrier entries to help you diversify your portfolio.
+                            Explore properties curated by performance. We&apos;ve highlighted high-demand markets and low-barrier entries to help you diversify your portfolio.
                         </p>
                     </div>
 

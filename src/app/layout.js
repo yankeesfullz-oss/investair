@@ -1,8 +1,6 @@
-import { Auth0Provider } from "@auth0/nextjs-auth0/client";
 import "./globals.css";
 import PublicAppShell from "@/components/Public/PublicAppShell";
 import PwaRegistration from "@/components/Public/PwaRegistration";
-import { auth0 } from "@/lib/auth0";
 import { absoluteUrl, getSiteUrl } from "@/lib/site";
 
 export const metadata = {
@@ -56,8 +54,7 @@ export const viewport = {
   themeColor: "#0f172a",
 };
 
-export default async function RootLayout({ children }) {
-  const session = await auth0.getSession();
+export default function RootLayout({ children }) {
   const structuredData = [
     {
       "@context": "https://schema.org",
@@ -83,14 +80,12 @@ export default async function RootLayout({ children }) {
         suppressHydrationWarning
         className="antialiased"
       >
-        <Auth0Provider user={session?.user}>
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-          />
-          <PwaRegistration />
-          <PublicAppShell>{children}</PublicAppShell>
-        </Auth0Provider>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
+        <PwaRegistration />
+        <PublicAppShell>{children}</PublicAppShell>
       </body>
     </html>
   );
