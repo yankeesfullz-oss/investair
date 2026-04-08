@@ -1,3 +1,5 @@
+import { getPublicBackendUrl } from '@/lib/backendUrl';
+
 let cachedBackendUrl = null;
 const missingEndpointRetryAt = new Map();
 
@@ -10,9 +12,7 @@ function createApiError(message, status, body = null) {
 
 export async function getBackendUrl() {
   if (cachedBackendUrl) return cachedBackendUrl;
-  // Prefer build-time environment variable NEXT_PUBLIC_API_URL so backend URL
-  // isn't hardcoded in source. Fallback to localhost for local dev.
-  cachedBackendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  cachedBackendUrl = getPublicBackendUrl();
   return cachedBackendUrl;
 }
 

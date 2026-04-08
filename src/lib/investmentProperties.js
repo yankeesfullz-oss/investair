@@ -5,10 +5,11 @@ import {
   parseInvestmentPrice,
   sortInvestmentProperties,
 } from "@/lib/investmentPropertyUtils";
+import { getBackendUrl } from "@/lib/backendUrl";
 import { PROPERTY_REVALIDATE_SECONDS } from "@/lib/site";
 
 function getBackendApiBaseUrl() {
-  return (process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/$/, "");
+  return getBackendUrl();
 }
 
 async function fetchBackendProperties() {
