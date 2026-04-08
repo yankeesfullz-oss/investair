@@ -1,4 +1,4 @@
-const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://investair.online").replace(/\/$/, "");
+const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://www.investair.online").replace(/\/$/, "");
 
 export const PROPERTY_REVALIDATE_SECONDS = 3600;
 
