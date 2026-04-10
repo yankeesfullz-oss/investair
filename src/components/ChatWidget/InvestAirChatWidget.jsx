@@ -19,6 +19,8 @@ import { openTawkSupport } from '@/lib/tawk';
 
 const INVESTOR_TOKEN_KEY = 'investor_token';
 const CHAT_SESSION_KEY = 'investair-chat-session-id';
+const CHAT_POSITION_KEY = 'investair-chat-position';
+const DRAG_VIEWPORT_MARGIN = 16;
 const DEFAULT_FAQS = [
   'How do I sign up?',
   'How do I fund my account?',
@@ -101,14 +103,52 @@ function buildInvestorMessage(user, wallets) {
   };
 }
 
+function clamp(value, min, max) {
+  if (value < min) {
+    return min;
+  }
+
+  if (value > max) {
+    return max;
+  }
+
+  return value;
+}
+
+function readStoredPosition() {
+  if (typeof window === 'undefined') {
+    return { x: 0, y: 0 };
+  }
+
+  try {
+    const stored = window.localStorage.getItem(CHAT_POSITION_KEY);
+    if (!stored) {
+      return { x: 0, y: 0 };
+    }
+
+    const parsed = JSON.parse(stored);
+    if (typeof parsed?.x === 'number' && typeof parsed?.y === 'number') {
+      return parsed;
+    }
+  } catch {
+    return { x: 0, y: 0 };
+  }
+
+  return { x: 0, y: 0 };
+}
+
 export default function InvestAirChatWidget() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+  const widgetRef = useRef(null);
+  const dragStateRef = useRef(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -146,6 +186,7 @@ export default function InvestAirChatWidget() {
 
   useEffect(() => {
     setChatSessionId(getOrCreateSessionId());
+    setDragOffset(readStoredPosition());
 
     function syncViewport() {
       setIsMobile(window.innerWidth < 768);
@@ -234,6 +275,69 @@ export default function InvestAirChatWidget() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isOpen]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined' || isMobile) {
+      return;
+    }
+
+    window.localStorage.setItem(CHAT_POSITION_KEY, JSON.stringify(dragOffset));
+  }, [dragOffset, isMobile]);
+
+  useEffect(() => {
+    if (isMobile || !widgetRef.current) {
+      return;
+    }
+
+    const rect = widgetRef.current.getBoundingClientRect();
+    const minOffsetX = dragOffset.x + DRAG_VIEWPORT_MARGIN - rect.left;
+    const maxOffsetX = dragOffset.x + window.innerWidth - DRAG_VIEWPORT_MARGIN - rect.right;
+    const minOffsetY = dragOffset.y + DRAG_VIEWPORT_MARGIN - rect.top;
+    const maxOffsetY = dragOffset.y + window.innerHeight - DRAG_VIEWPORT_MARGIN - rect.bottom;
+
+    const nextOffset = {
+      x: clamp(dragOffset.x, minOffsetX, maxOffsetX),
+      y: clamp(dragOffset.y, minOffsetY, maxOffsetY),
+    };
+
+    if (nextOffset.x !== dragOffset.x || nextOffset.y !== dragOffset.y) {
+      setDragOffset(nextOffset);
+    }
+  }, [dragOffset, isMobile, isOpen]);
+
+  useEffect(() => {
+    if (isMobile) {
+      return undefined;
+    }
+
+    function syncDragBounds() {
+      if (!widgetRef.current) {
+        return;
+      }
+
+      const rect = widgetRef.current.getBoundingClientRect();
+      setDragOffset((current) => {
+        const minOffsetX = current.x + DRAG_VIEWPORT_MARGIN - rect.left;
+        const maxOffsetX = current.x + window.innerWidth - DRAG_VIEWPORT_MARGIN - rect.right;
+        const minOffsetY = current.y + DRAG_VIEWPORT_MARGIN - rect.top;
+        const maxOffsetY = current.y + window.innerHeight - DRAG_VIEWPORT_MARGIN - rect.bottom;
+
+        const nextOffset = {
+          x: clamp(current.x, minOffsetX, maxOffsetX),
+          y: clamp(current.y, minOffsetY, maxOffsetY),
+        };
+
+        if (nextOffset.x === current.x && nextOffset.y === current.y) {
+          return current;
+        }
+
+        return nextOffset;
+      });
+    }
+
+    window.addEventListener('resize', syncDragBounds);
+    return () => window.removeEventListener('resize', syncDragBounds);
+  }, [isMobile]);
+
   async function loadHistory() {
     setHistoryLoading(true);
 
@@ -263,6 +367,54 @@ export default function InvestAirChatWidget() {
   function handleRoute(url) {
     setIsOpen(false);
     router.push(url);
+  }
+
+  function handleDragStart(event) {
+    if (isMobile || !widgetRef.current) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const rect = widgetRef.current.getBoundingClientRect();
+    dragStateRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      initialOffset: dragOffset,
+      minOffsetX: dragOffset.x + DRAG_VIEWPORT_MARGIN - rect.left,
+      maxOffsetX: dragOffset.x + window.innerWidth - DRAG_VIEWPORT_MARGIN - rect.right,
+      minOffsetY: dragOffset.y + DRAG_VIEWPORT_MARGIN - rect.top,
+      maxOffsetY: dragOffset.y + window.innerHeight - DRAG_VIEWPORT_MARGIN - rect.bottom,
+    };
+
+    setDragging(true);
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  }
+
+  function handleDragMove(event) {
+    const dragState = dragStateRef.current;
+    if (!dragState || dragState.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const deltaX = event.clientX - dragState.startX;
+    const deltaY = event.clientY - dragState.startY;
+
+    setDragOffset({
+      x: clamp(dragState.initialOffset.x + deltaX, dragState.minOffsetX, dragState.maxOffsetX),
+      y: clamp(dragState.initialOffset.y + deltaY, dragState.minOffsetY, dragState.maxOffsetY),
+    });
+  }
+
+  function handleDragEnd(event) {
+    if (dragStateRef.current?.pointerId !== event.pointerId) {
+      return;
+    }
+
+    dragStateRef.current = null;
+    setDragging(false);
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
   }
 
   async function handleLiveAgentRequest() {
@@ -373,13 +525,29 @@ export default function InvestAirChatWidget() {
   }
 
   const widgetWidthClass = isMobile ? 'inset-0 rounded-none' : 'bottom-24 right-4 w-[24rem] rounded-[2rem] sm:right-6 sm:w-[26rem]';
+  const desktopDragStyle = isMobile ? undefined : { transform: `translate3d(${dragOffset.x}px, ${dragOffset.y}px, 0)` };
   const totalAvailable = wallets.reduce((sum, wallet) => sum + Number(wallet.availableBalance || 0), 0);
   const featuredPrompt = DEFAULT_FAQS[faqIndex];
 
   return (
     <>
       {!isOpen ? (
-        <div className="fixed bottom-24 right-4 z-40 sm:right-6">
+        <div ref={widgetRef} className="fixed bottom-24 right-4 z-40 sm:right-6" style={desktopDragStyle}>
+          {!isMobile ? (
+            <div className="mb-2 flex justify-end">
+              <button
+                type="button"
+                onPointerDown={handleDragStart}
+                onPointerMove={handleDragMove}
+                onPointerUp={handleDragEnd}
+                onPointerCancel={handleDragEnd}
+                className={`inline-flex cursor-grab items-center rounded-full border border-rose-100 bg-white/95 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.2em] text-slate-400 shadow-sm touch-none ${dragging ? 'cursor-grabbing' : ''}`}
+                aria-label="Drag chat launcher"
+              >
+                Move chat
+              </button>
+            </div>
+          ) : null}
           <button
             type="button"
             onClick={() => setIsOpen(true)}
@@ -404,9 +572,14 @@ export default function InvestAirChatWidget() {
       ) : null}
 
       {isOpen ? (
-        <div className="fixed inset-0 z-50 bg-slate-950/35 backdrop-blur-sm" onClick={() => setIsOpen(false)}>
+        <div
+          className={isMobile ? 'fixed inset-0 z-50 bg-slate-950/35 backdrop-blur-sm' : 'pointer-events-none fixed inset-0 z-50'}
+          onClick={isMobile ? () => setIsOpen(false) : undefined}
+        >
           <section
-            className={`fixed ${widgetWidthClass} flex max-h-dvh flex-col border border-white/70 bg-[linear-gradient(180deg,#fff7fb_0%,#ffffff_32%,#fff1f2_100%)] shadow-[0_40px_120px_rgba(15,23,42,0.18)] ${isMobile ? '' : 'max-h-[80vh]'}`}
+            ref={widgetRef}
+            className={`fixed ${widgetWidthClass} ${isMobile ? '' : 'pointer-events-auto'} flex max-h-dvh flex-col border border-white/70 bg-[linear-gradient(180deg,#fff7fb_0%,#ffffff_32%,#fff1f2_100%)] shadow-[0_40px_120px_rgba(15,23,42,0.18)] ${isMobile ? '' : 'max-h-[80vh]'}`}
+            style={desktopDragStyle}
             onClick={(event) => event.stopPropagation()}
           >
             <header className="flex items-start justify-between gap-4 border-b border-rose-100 px-5 py-4">
@@ -421,11 +594,24 @@ export default function InvestAirChatWidget() {
                     ? `${user.fullName || 'Investor'} · ${formatCurrency(totalAvailable)} available`
                     : 'Investor sign-up or login is required before you can chat.'}
                 </p>
+                {!isMobile ? (
+                  <button
+                    type="button"
+                    onPointerDown={handleDragStart}
+                    onPointerMove={handleDragMove}
+                    onPointerUp={handleDragEnd}
+                    onPointerCancel={handleDragEnd}
+                    className={`mt-3 inline-flex cursor-grab items-center rounded-full border border-rose-100 bg-white px-3 py-1 text-[11px] font-medium uppercase tracking-[0.2em] text-slate-400 shadow-sm touch-none ${dragging ? 'cursor-grabbing' : ''}`}
+                    aria-label="Drag chat window"
+                  >
+                    Drag window
+                  </button>
+                ) : null}
               </div>
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-rose-100 bg-white text-slate-600 transition hover:bg-rose-50"
+                className="pointer-events-auto inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-rose-100 bg-white text-slate-600 transition hover:bg-rose-50"
                 aria-label="Close chat"
               >
                 <X className="h-5 w-5" />

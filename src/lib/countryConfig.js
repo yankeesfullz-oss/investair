@@ -5,6 +5,51 @@ export const STORAGE_KEYS = {
   geoDismissed: "geo-dismissed",
 };
 
+export const DEFAULT_SITE_LANGUAGE = "en-US";
+export const DEFAULT_SITE_CURRENCY = "USD";
+export const ENGLISH_SPEAKING_COUNTRIES = new Set([
+  "AE",
+  "AU",
+  "CA",
+  "GB",
+  "GH",
+  "IE",
+  "KE",
+  "NG",
+  "NZ",
+  "SG",
+  "US",
+  "ZA",
+]);
+
+const GOOGLE_TRANSLATE_LANGUAGE_OVERRIDES = {
+  "ar-AE": "ar",
+  "ar-QA": "ar",
+  "ar-SA": "ar",
+  "de-CH": "de",
+  "de-DE": "de",
+  "en-AE": "en",
+  "en-AU": "en",
+  "en-CA": "en",
+  "en-GB": "en",
+  "en-GH": "en",
+  "en-KE": "en",
+  "en-NG": "en",
+  "en-SG": "en",
+  "en-US": "en",
+  "en-ZA": "en",
+  "es-ES": "es",
+  "es-MX": "es",
+  "fr-FR": "fr",
+  "hi-IN": "hi",
+  "it-IT": "it",
+  "ja-JP": "ja",
+  "nl-NL": "nl",
+  "pt-BR": "pt",
+  "sv-SE": "sv",
+  "zh-CN": "zh-CN",
+};
+
 export const countryConfig = {
   AE: { locale: "en-AE", currency: "AED" },
   AU: { locale: "en-AU", currency: "AUD" },
@@ -57,8 +102,25 @@ export function getCountryPreference(countryCode) {
   return {
     country: normalizedCountry,
     locale: countryConfig[normalizedCountry]?.locale || `en-${normalizedCountry}`,
-    currency: countryConfig[normalizedCountry]?.currency || "USD",
+    currency: countryConfig[normalizedCountry]?.currency || DEFAULT_SITE_CURRENCY,
   };
+}
+
+export function isEnglishLocale(locale) {
+  return typeof locale === "string" && locale.toLowerCase().startsWith("en");
+}
+
+export function isEnglishSpeakingCountry(countryCode) {
+  const normalizedCountry = normalizeCountryCode(countryCode);
+  return normalizedCountry ? ENGLISH_SPEAKING_COUNTRIES.has(normalizedCountry) : false;
+}
+
+export function toGoogleTranslateLanguage(locale) {
+  if (!locale || typeof locale !== "string") {
+    return "en";
+  }
+
+  return GOOGLE_TRANSLATE_LANGUAGE_OVERRIDES[locale] || locale.split("-")[0] || "en";
 }
 
 export function formatLocaleLabel(locale, countryCode) {

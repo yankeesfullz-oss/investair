@@ -21,7 +21,8 @@ function InvestorSignupPageContent() {
   const { user, signup, loading } = useInvestorAuth();
   const redirectTo = searchParams.get('redirectTo') || '/investor/dashboard';
   const months = searchParams.get('months');
-  const loginHref = `/investor/login?redirectTo=${encodeURIComponent(redirectTo)}${months ? `&months=${encodeURIComponent(months)}` : ''}`;
+  const referralCode = searchParams.get('ref') || '';
+  const loginHref = `/investor/login?redirectTo=${encodeURIComponent(redirectTo)}${months ? `&months=${encodeURIComponent(months)}` : ''}${referralCode ? `&ref=${encodeURIComponent(referralCode)}` : ''}`;
   const [form, setForm] = useState({ fullName: '', email: '', password: '', confirmPassword: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -53,7 +54,7 @@ function InvestorSignupPageContent() {
 
     setSubmitting(true);
     try {
-      await signup(form);
+      await signup({ ...form, referralCode });
       router.replace(redirectTo);
     } catch (error) {
       setServerError(error.message || 'Unable to create your account right now.');
@@ -70,6 +71,7 @@ function InvestorSignupPageContent() {
             <div className="mb-8 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-pink-50 text-pink-600">
               <UserPlus className="h-6 w-6" />
             </div>
+            {referralCode ? <div className="mb-4 inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-medium uppercase tracking-[0.2em] text-emerald-700">Referral code applied: {referralCode}</div> : null}
             <h1 className="text-3xl font-semibold text-slate-900">Create an investor account</h1>
             <p className="mt-2 text-sm text-slate-500">Create your account with your full name, email address, and a strong password.</p>
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">

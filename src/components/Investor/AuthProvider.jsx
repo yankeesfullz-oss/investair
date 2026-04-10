@@ -64,11 +64,11 @@ export default function InvestorAuthProvider({ children }) {
     return response;
   }
 
-  async function signup({ fullName, email, password, confirmPassword }) {
+  async function signup({ fullName, email, password, confirmPassword, referralCode }) {
     const response = await apiFetch('/api/auth/signup', {
       method: 'POST',
       tokenStorageKey: INVESTOR_TOKEN_KEY,
-      body: JSON.stringify({ fullName, email, password, confirmPassword }),
+      body: JSON.stringify({ fullName, email, password, confirmPassword, referralCode }),
     });
 
     if (typeof window !== 'undefined' && response?.token) {

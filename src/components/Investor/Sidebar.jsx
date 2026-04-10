@@ -2,19 +2,22 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ArrowDownToLine, Building2, CreditCard, LayoutDashboard, LogOut, ReceiptText, ShieldCheck, Wallet } from 'lucide-react';
+import { ArrowDownToLine, Building2, CreditCard, Globe, LayoutDashboard, LogOut, ReceiptText, ShieldCheck, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLanguagePreference } from '@/context/LanguagePreferenceProvider';
 
 const items = [
   { href: '/investor/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/investor/deposit', label: 'Deposit', icon: ArrowDownToLine },
   { href: '/investor/properties', label: 'Property Management', icon: Building2 },
+  { href: '/investor/referrals', label: 'Referrals', icon: Users },
   { href: '/investor/withdrawals', label: 'Withdrawals', icon: CreditCard },
   { href: '/investor/transactions', label: 'Transactions', icon: ReceiptText },
 ];
 
 export default function InvestorSidebar({ isOpen, onClose, onLogout, user }) {
   const pathname = usePathname();
+  const { openSelector } = useLanguagePreference();
 
   return (
     <>
@@ -69,6 +72,14 @@ export default function InvestorSidebar({ isOpen, onClose, onLogout, user }) {
           })}
         </nav>
 
+        <button
+          type="button"
+          onClick={openSelector}
+          className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+        >
+          <Globe className="h-4 w-4" />
+          Language
+        </button>
         <button
           type="button"
           onClick={onLogout}

@@ -1,6 +1,8 @@
 import "./globals.css";
+import LanguageSelectorOverlay from "@/components/Language/LanguageSelectorOverlay";
 import PublicAppShell from "@/components/Public/PublicAppShell";
 import PwaRegistration from "@/components/Public/PwaRegistration";
+import LanguagePreferenceProvider from "@/context/LanguagePreferenceProvider";
 import { absoluteUrl, getSiteUrl } from "@/lib/site";
 
 export const metadata = {
@@ -80,12 +82,15 @@ export default function RootLayout({ children }) {
         suppressHydrationWarning
         className="antialiased"
       >
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-        />
-        <PwaRegistration />
-        <PublicAppShell>{children}</PublicAppShell>
+        <LanguagePreferenceProvider>
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+          />
+          <PwaRegistration />
+          <PublicAppShell>{children}</PublicAppShell>
+          <LanguageSelectorOverlay />
+        </LanguagePreferenceProvider>
       </body>
     </html>
   );

@@ -45,7 +45,7 @@ export default function InvestorTransactionsPage() {
         })),
         ...(payouts.status === 'fulfilled' ? payouts.value : []).map((item) => ({
           id: item._id,
-          type: 'Profit Credit',
+          type: item.source === 'referral_commission' ? 'Referral Commission' : 'Profit Credit',
           amount: item.amount,
           currency: item.currency,
           status: item.status,
@@ -77,7 +77,7 @@ export default function InvestorTransactionsPage() {
 
   const totals = useMemo(() => ({
     deposits: transactions.filter((item) => item.type === 'Deposit Credit').reduce((sum, item) => sum + Number(item.amount || 0), 0),
-    profits: transactions.filter((item) => item.type === 'Profit Credit').reduce((sum, item) => sum + Number(item.amount || 0), 0),
+    profits: transactions.filter((item) => ['Profit Credit', 'Referral Commission'].includes(item.type)).reduce((sum, item) => sum + Number(item.amount || 0), 0),
     debits: transactions.filter((item) => ['Withdrawal', 'Investment Debit'].includes(item.type)).reduce((sum, item) => sum + Number(item.amount || 0), 0),
   }), [transactions]);
 

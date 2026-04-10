@@ -124,7 +124,7 @@ export default function InvestorDashboardPage() {
     const rows = [
       ...deposits.map((item) => ({ id: item._id, type: 'Deposit Credit', amount: item.amount, status: item.status, date: item.createdAt, detail: item.currency })),
       ...withdrawals.map((item) => ({ id: item._id, type: 'Withdrawal', amount: item.amount, status: item.status, date: item.createdAt, detail: item.currency })),
-      ...payouts.map((item) => ({ id: item._id, type: 'Profit Credit', amount: item.amount, status: item.status, date: item.createdAt, detail: item.currency })),
+      ...payouts.map((item) => ({ id: item._id, type: item.source === 'referral_commission' ? 'Referral Commission' : 'Profit Credit', amount: item.amount, status: item.status, date: item.createdAt, detail: item.currency })),
       ...investments.map((item) => ({ id: item._id, type: 'Investment Debit', amount: item.slotPrice || item.amount, status: item.status, date: item.createdAt, detail: item.currency || 'USDT' })),
     ];
 
@@ -188,6 +188,7 @@ export default function InvestorDashboardPage() {
           <div className="mt-6 flex flex-wrap gap-3">
             <Link href="/investor/deposit" className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800">Open deposit page</Link>
             <Link href="/investor/properties" className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800">Manage properties</Link>
+            <Link href="/investor/referrals" className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100">Open referrals</Link>
             <Link href="/investor/withdrawals" className="rounded-2xl border border-slate-200 px-5 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">Request withdrawal</Link>
             <Link href="/investor/transactions" className="rounded-2xl border border-pink-100 bg-pink-50 px-5 py-3 text-sm font-medium text-pink-700 transition hover:bg-pink-100">Open transactions</Link>
           </div>

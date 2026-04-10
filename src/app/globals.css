@@ -129,3 +129,14 @@
     @apply font-sans;
   }
 }
+
+body {
+  top: 0 !important;
+}
+
+.goog-logo-link,
+.goog-te-gadget span,
+.goog-te-banner-frame.skiptranslate,
+iframe.skiptranslate {
+  display: none !important;
+}

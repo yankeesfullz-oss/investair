@@ -7,7 +7,10 @@ import {
   formatLocaleLabel,
   formatRegionLabel,
   getCountryPreference,
+  isEnglishLocale,
+  isEnglishSpeakingCountry,
 } from "@/lib/countryConfig";
+import { useLanguagePreference } from "@/context/LanguagePreferenceProvider";
 
 function getCookieValue(name) {
   if (typeof document === "undefined") {
@@ -20,6 +23,7 @@ function getCookieValue(name) {
 }
 
 export default function GeoSuggestionPopup() {
+  const { setPreferences } = useLanguagePreference();
   const pathname = usePathname();
   const [suggestion, setSuggestion] = useState(null);
   const [show, setShow] = useState(false);
@@ -45,6 +49,11 @@ export default function GeoSuggestionPopup() {
         return;
       }
 
+      if (isEnglishSpeakingCountry(detectedPreference.country) && isEnglishLocale(detectedPreference.locale)) {
+        localStorage.setItem(STORAGE_KEYS.geoDismissed, "true");
+        return;
+      }
+
       setSuggestion(detectedPreference);
       setShow(true);
     }, 0);
@@ -62,11 +71,11 @@ export default function GeoSuggestionPopup() {
       return;
     }
 
-    localStorage.setItem(STORAGE_KEYS.country, suggestion.country);
-    localStorage.setItem(STORAGE_KEYS.language, suggestion.locale);
-    localStorage.setItem(STORAGE_KEYS.currency, suggestion.currency);
-    localStorage.setItem(STORAGE_KEYS.geoDismissed, "true");
-    window.dispatchEvent(new Event("storage"));
+    setPreferences({
+      country: suggestion.country,
+      currency: suggestion.currency,
+      locale: suggestion.locale,
+    });
     setShow(false);
   }
 

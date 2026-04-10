@@ -1,11 +1,13 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  DEFAULT_SITE_CURRENCY,
   STORAGE_KEYS,
   formatLocaleLabel,
   getCountryFromLocale,
   getCountryPreference,
 } from "@/lib/countryConfig";
+import { useLanguagePreference } from "@/context/LanguagePreferenceProvider";
 
 const TABS = {
   LANGUAGE: "language",
@@ -13,6 +15,7 @@ const TABS = {
 };
 
 export default function LanguageCurrencyCard({ onClose }) {
+  const { setPreferences } = useLanguagePreference();
   const [tab, setTab] = useState(TABS.LANGUAGE);
   const [countriesList, setCountriesList] = useState([]);
   const [currenciesList, setCurrenciesList] = useState([]);
@@ -78,17 +81,11 @@ export default function LanguageCurrencyCard({ onClose }) {
   function saveAndClose() {
     const preference = getCountryPreference(selectedCountry);
 
-    if (preference?.country) {
-      localStorage.setItem(STORAGE_KEYS.country, preference.country);
-      localStorage.setItem(STORAGE_KEYS.language, preference.locale);
-    }
-
-    localStorage.setItem(
-      STORAGE_KEYS.currency,
-      selectedCurrency || preference?.currency || "USD"
-    );
-    localStorage.setItem(STORAGE_KEYS.geoDismissed, "true");
-    window.dispatchEvent(new Event("storage"));
+    setPreferences({
+      country: preference?.country || selectedCountry,
+      currency: selectedCurrency || preference?.currency || DEFAULT_SITE_CURRENCY,
+      locale: preference?.locale || localStorage.getItem(STORAGE_KEYS.language) || "en-US",
+    });
     onClose?.();
   }
 

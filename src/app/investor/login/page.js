@@ -21,7 +21,8 @@ function InvestorLoginPageContent() {
   const { user, login, loading } = useInvestorAuth();
   const redirectTo = searchParams.get('redirectTo') || '/investor/dashboard';
   const months = searchParams.get('months');
-  const signupHref = `/investor/signup?redirectTo=${encodeURIComponent(redirectTo)}${months ? `&months=${encodeURIComponent(months)}` : ''}`;
+  const referralCode = searchParams.get('ref') || '';
+  const signupHref = `/investor/signup?redirectTo=${encodeURIComponent(redirectTo)}${months ? `&months=${encodeURIComponent(months)}` : ''}${referralCode ? `&ref=${encodeURIComponent(referralCode)}` : ''}`;
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
@@ -71,6 +72,7 @@ function InvestorLoginPageContent() {
               <div className="mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-pink-50 text-pink-600">
                 <LogIn className="h-6 w-6" />
               </div>
+              {referralCode ? <div className="mb-4 inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-medium uppercase tracking-[0.2em] text-emerald-700">Referral link detected</div> : null}
               <h2 className="text-3xl font-semibold text-slate-900">Investor login</h2>
               <p className="mt-2 text-sm text-slate-500">Use your investor email and password to access your wallet dashboard and funding tools.</p>
             </div>

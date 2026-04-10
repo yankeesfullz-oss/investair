@@ -11,6 +11,7 @@ export default function AdminSidebar() {
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/admin/properties', label: 'Property Management', icon: Building2 },
     { href: '/admin/deposits', label: 'Deposits', icon: Landmark },
+    { href: '/admin/payouts', label: 'Payouts', icon: CircleDollarSign },
     { href: '/admin/withdrawals', label: 'Withdrawals', icon: CircleDollarSign },
     { href: '/admin/investors', label: 'Investors', icon: Users },
     { href: '/admin/chatbots', label: 'Chatbots', icon: MessagesSquare },

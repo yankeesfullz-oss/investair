@@ -6,7 +6,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Globe } from "lucide-react";
 import { STORAGE_KEYS } from "@/lib/countryConfig";
-import LanguageCurrencyCard from "./languageCurrencyCard";
+import { useLanguagePreference } from "@/context/LanguagePreferenceProvider";
 import { useSearchExperience } from "./searchExperienceProvider";
 
 function readStoredPreferences() {
@@ -26,7 +26,7 @@ function readStoredPreferences() {
 }
 
 export default function Navbar() {
-	const [open, setOpen] = useState(false);
+	const { openSelector } = useLanguagePreference();
 	const [, setPreferences] = useState(readStoredPreferences);
 	const pathname = usePathname();
 	const { mode, setMode } = useSearchExperience();
@@ -66,7 +66,7 @@ export default function Navbar() {
 						<div className="flex items-center gap-3 md:hidden">
 							<button
 								aria-label="Change language and currency"
-								onClick={() => setOpen(true)}
+								onClick={openSelector}
 								className="rounded-full border border-neutral-300 bg-white p-2 text-neutral-800 transition hover:bg-neutral-50"
 							>
 								<Globe size={18} />
@@ -90,7 +90,7 @@ export default function Navbar() {
 					<div className="hidden items-center justify-end gap-3 md:flex">
 						<button
 							aria-label="Change language and currency"
-							onClick={() => setOpen(true)}
+							onClick={openSelector}
 							className="rounded-full border border-neutral-300 p-2 text-neutral-800 bg-white hover:bg-neutral-50 transition"
 						>
 							<Globe size={18} />
@@ -99,13 +99,6 @@ export default function Navbar() {
 				</div>
 			</header>
 
-			{open && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3 sm:p-4" onClick={() => setOpen(false)}>
-					<div className="w-full max-w-4xl" onClick={(e) => e.stopPropagation()}>
-						<LanguageCurrencyCard onClose={() => setOpen(false)} />
-					</div>
-				</div>
-			)}
 		</>
 	);
 }
