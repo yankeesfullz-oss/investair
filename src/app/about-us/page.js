@@ -1,4 +1,5 @@
 import Link from "next/link";
+import BoardOfDirectorsSection from "@/components/Public/BoardOfDirectorsSection";
 
 export const metadata = {
   title: "About InvestAir",
@@ -82,6 +83,8 @@ export default function AboutPage() {
             </div>
           </article>
         </div>
+
+        <BoardOfDirectorsSection />
       </section>
     </main>
   );

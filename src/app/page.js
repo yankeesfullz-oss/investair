@@ -3,6 +3,7 @@ import { ArrowRight, Building2, CalendarRange, ShieldCheck, Wallet } from "lucid
 import BestDealsSection from "@/components/Public/BestDealsSection";
 import Hero from "@/components/Public/hero";
 import MobileAppInstallSection from "@/components/Public/MobileAppInstallSection";
+import TestimonialsSection from "@/components/Public/TestimonialsSection";
 import Tutorial from "@/components/Public/Tutorial";
 
 export const metadata = {
@@ -15,6 +16,7 @@ export default function Home() {
   return (
     <main>
       <Hero />
+      <TestimonialsSection />
       <BestDealsSection />
 
       <section className="bg-rose-50 px-4 pb-8 text-slate-900  sm:px-6 md:px-10 md:pb-12">

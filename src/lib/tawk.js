@@ -2,6 +2,10 @@ const TAWK_SCRIPT_URL = 'https://embed.tawk.to/69cb8cbb8a92ab1c373e7f33/1jl1hrfl
 
 let tawkPromise = null;
 
+function sanitizeAttributeValue(value, limit = 255) {
+  return String(value || '').trim().slice(0, limit);
+}
+
 function buildWalletSummary(wallets = []) {
   return wallets
     .map((wallet) => `${wallet.currency}:${Number(wallet.availableBalance || 0)}`)
@@ -9,18 +13,63 @@ function buildWalletSummary(wallets = []) {
     .slice(0, 240);
 }
 
-function applyAttributes({ user, wallets, sessionId }) {
-  if (typeof window === 'undefined' || !window.Tawk_API?.setAttributes || !user) {
+function applyAttributes({ user, wallets, sessionId, phone, contactRequest }) {
+  if (typeof window === 'undefined' || !window.Tawk_API?.setAttributes) {
     return;
   }
 
+  const attributes = {
+    sessionId: sessionId || '',
+    walletSummary: buildWalletSummary(wallets),
+    primaryWallet: wallets?.[0]?.address || '',
+  };
+
+  if (user?.fullName) {
+    attributes.name = user.fullName;
+  }
+
+  if (user?.email) {
+    attributes.email = user.email;
+  }
+
+  if (phone) {
+    attributes.phone = sanitizeAttributeValue(phone, 32);
+  }
+
+  if (contactRequest?.name) {
+    attributes.contactName = sanitizeAttributeValue(contactRequest.name, 80);
+  }
+
+  if (contactRequest?.email) {
+    attributes.contactEmail = sanitizeAttributeValue(contactRequest.email, 120);
+  }
+
+  if (contactRequest?.phone) {
+    attributes.contactPhone = sanitizeAttributeValue(contactRequest.phone, 32);
+  }
+
+  if (contactRequest?.message) {
+    attributes.contactMessage = sanitizeAttributeValue(contactRequest.message, 240);
+  }
+
   window.Tawk_API.setAttributes(
+    attributes,
+    () => {}
+  );
+}
+
+function addContactEvent({ contactRequest }) {
+  if (typeof window === 'undefined' || !window.Tawk_API?.addEvent || !contactRequest) {
+    return;
+  }
+
+  window.Tawk_API.addEvent(
+    'contact-request',
     {
-      name: user.fullName || 'Investor',
-      email: user.email || '',
-      sessionId: sessionId || '',
-      walletSummary: buildWalletSummary(wallets),
-      primaryWallet: wallets?.[0]?.address || '',
+      contactname: sanitizeAttributeValue(contactRequest.name, 80),
+      contactemail: sanitizeAttributeValue(contactRequest.email, 120),
+      contactphone: sanitizeAttributeValue(contactRequest.phone, 32),
+      messagepreview: sanitizeAttributeValue(contactRequest.message, 240),
     },
     () => {}
   );
@@ -78,6 +127,7 @@ export function loadTawk(context = {}) {
 export async function openTawkSupport(context = {}) {
   const api = await loadTawk(context);
   applyAttributes(context);
+  addContactEvent(context);
   if (typeof api.maximize === 'function') {
     api.maximize();
   }
