@@ -47,7 +47,7 @@ export function formatDateTime(value) {
 export function getStatusBadgeClasses(status) {
   const normalized = String(status || '').toLowerCase();
 
-  if (['paid', 'completed', 'credited', 'active', 'reserved', 'confirmed'].includes(normalized)) {
+  if (['paid', 'sent', 'completed', 'credited', 'active', 'reserved', 'confirmed'].includes(normalized)) {
     return 'border-emerald-200 bg-emerald-50 text-emerald-700';
   }
 

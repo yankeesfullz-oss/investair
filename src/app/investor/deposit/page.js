@@ -114,7 +114,7 @@ export default function InvestorDepositPage() {
                   <div className="mt-2 text-2xl font-semibold text-slate-950">{card.currency}</div>
                   <div className="mt-1 text-sm text-slate-500">{card.label} · {card.network}</div>
                 </div>
-                <span className="rounded-full bg-amber-50 px-3 py-1 text-[11px] font-medium text-amber-700">Shared admin deposit address</span>
+                <span className="rounded-full bg-lime-100 px-3 py-1 text-[11px] font-medium text-lime-700">Your Live Wallet </span>
               </div>
 
               <div className="mt-5 rounded-3xl border border-slate-100 bg-slate-50 p-4">

@@ -13,6 +13,7 @@ export default function InvestorWithdrawalsPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState('');
+  const selectedWallet = wallets.find((wallet) => wallet.currency === form.currency) || null;
 
   useEffect(() => {
     let cancelled = false;
@@ -60,7 +61,7 @@ export default function InvestorWithdrawalsPage() {
       });
 
       setForm({ amount: '', currency: form.currency, network: form.network, destinationAddress: '' });
-      setMessage('Withdrawal request submitted. Admin will review it after payment settlement.');
+      setMessage('Withdrawal request submitted. The amount is now reserved and will stay pending until it is marked sent.');
       const data = await apiFetch('/api/withdrawals', { tokenStorageKey: 'investor_token' });
       setWithdrawals(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -74,8 +75,8 @@ export default function InvestorWithdrawalsPage() {
     <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
       <section className="rounded-[2rem] border border-white/70 bg-white/85 p-6 shadow-[0_20px_70px_rgba(15,23,42,0.06)]">
         <div className="inline-flex rounded-full border border-pink-100 bg-pink-50 px-4 py-2 text-xs uppercase tracking-[0.24em] text-pink-600">Withdraw funds</div>
-        <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">Submit a withdrawal request for admin approval.</h1>
-        <p className="mt-3 text-sm leading-6 text-slate-600">Withdrawals are processed manually after the admin pays externally. Your request will move through pending, processing, and paid statuses.</p>
+        <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">Submit a withdrawal request from your available balance.</h1>
+        <p className="mt-3 text-sm leading-6 text-slate-600">Submitting a request immediately reserves the amount from your wallet. Admin only updates the request from pending to sent once the transfer has been completed externally.</p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div>
@@ -90,6 +91,7 @@ export default function InvestorWithdrawalsPage() {
                   <option key={currency} value={currency}>{currency}</option>
                 ))}
               </select>
+              <p className="mt-2 text-xs text-slate-500">Available now: {Number(selectedWallet?.availableBalance || 0).toLocaleString('en-US', { maximumFractionDigits: 8 })} {form.currency}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-slate-700">Network</label>
@@ -134,6 +136,7 @@ export default function InvestorWithdrawalsPage() {
                     <div className="mt-1 text-sm text-slate-500">{withdrawal.network} · {formatDateTime(withdrawal.createdAt)}</div>
                     <div className="mt-2 break-all text-xs text-slate-500">Destination: {withdrawal.destinationAddress}</div>
                     {withdrawal.adminNote ? <div className="mt-2 text-sm text-slate-600">Admin note: {withdrawal.adminNote}</div> : null}
+                    {withdrawal.sentTxHash ? <div className="mt-1 text-xs text-slate-500">Transfer reference: {withdrawal.sentTxHash}</div> : null}
                   </div>
                   <StatusBadge status={withdrawal.status} />
                 </div>

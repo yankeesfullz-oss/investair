@@ -52,9 +52,9 @@ export default function AdminWithdrawalsPage() {
       const adminNote = window.prompt('Admin note (optional):', '') || '';
       const body = { adminNote };
 
-      if (action === 'paid') {
-        body.paidTxHash = window.prompt('Paid transaction hash:', '') || '';
-        body.paidAt = new Date().toISOString();
+      if (action === 'sent') {
+        body.sentTxHash = window.prompt('Transfer hash / reference (optional):', '') || '';
+        body.sentAt = new Date().toISOString();
       }
 
       await apiFetch(`/api/withdrawals/${withdrawalId}/${action}`, {
@@ -76,8 +76,8 @@ export default function AdminWithdrawalsPage() {
     <div className="space-y-6">
       <section className="rounded-[2.5rem] border border-white/70 bg-white/85 p-6 shadow-[0_20px_70px_rgba(15,23,42,0.06)]">
         <div className="inline-flex rounded-full border border-pink-100 bg-pink-50 px-4 py-2 text-xs uppercase tracking-[0.24em] text-pink-600">Withdrawals</div>
-        <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">Approve live withdrawal requests after settlement.</h1>
-        <p className="mt-3 text-sm leading-6 text-slate-600">This queue refreshes automatically so admins can see requests in real time, mark them as processing, and approve them after paying.</p>
+        <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">Mark live withdrawal requests as sent after settlement.</h1>
+        <p className="mt-3 text-sm leading-6 text-slate-600">Users can submit withdrawals directly. Their funds are reserved immediately, and this queue is only for updating the operational status from pending to sent.</p>
         {message ? <p className="mt-3 text-sm text-slate-600">{message}</p> : null}
       </section>
 
@@ -97,14 +97,14 @@ export default function AdminWithdrawalsPage() {
                     <div className="mt-1 text-sm text-slate-500">Requested: {formatDateTime(withdrawal.createdAt)}</div>
                     <div className="mt-2 break-all text-xs text-slate-500">Destination: {withdrawal.destinationAddress}</div>
                     {withdrawal.adminNote ? <div className="mt-2 text-sm text-slate-600">Admin note: {withdrawal.adminNote}</div> : null}
-                    {withdrawal.paidTxHash ? <div className="mt-1 text-xs text-slate-500">Paid tx: {withdrawal.paidTxHash}</div> : null}
+                    {withdrawal.sentTxHash ? <div className="mt-1 text-xs text-slate-500">Transfer reference: {withdrawal.sentTxHash}</div> : null}
                   </div>
                   <div className="flex min-w-55 flex-col items-end gap-3">
                     <StatusBadge status={withdrawal.status} />
                     <div className="flex flex-wrap justify-end gap-2">
-                      <button type="button" disabled={processingId === withdrawal._id} onClick={() => updateStatus(withdrawal._id, 'processing')} className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 transition hover:bg-amber-100 disabled:opacity-50">Mark processing</button>
-                      <button type="button" disabled={processingId === withdrawal._id} onClick={() => updateStatus(withdrawal._id, 'paid')} className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50">Mark paid</button>
-                      <button type="button" disabled={processingId === withdrawal._id} onClick={() => updateStatus(withdrawal._id, 'reject')} className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-100 disabled:opacity-50">Reject</button>
+                      {withdrawal.status === 'pending' ? (
+                        <button type="button" disabled={processingId === withdrawal._id} onClick={() => updateStatus(withdrawal._id, 'sent')} className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50">Mark sent</button>
+                      ) : null}
                     </div>
                   </div>
                 </div>

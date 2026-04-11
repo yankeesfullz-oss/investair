@@ -10,6 +10,7 @@ export default function AdminPayoutsPage() {
   const [message, setMessage] = useState('');
   const [payouts, setPayouts] = useState([]);
   const [processingId, setProcessingId] = useState('');
+  const [backfillLoading, setBackfillLoading] = useState(false);
   const [referralCommissions, setReferralCommissions] = useState([]);
 
   useEffect(() => {
@@ -89,12 +90,35 @@ export default function AdminPayoutsPage() {
     }
   }
 
+  async function runBackfill() {
+    setBackfillLoading(true);
+    setMessage('');
+
+    try {
+      const summary = await apiFetch('/api/payouts/backfill', {
+        tokenStorageKey: 'admin_token',
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+
+      setMessage(`Backfill complete: ${summary.payoutsCreated || 0} payouts created, ${summary.payoutsSkipped || 0} skipped.`);
+      await refresh();
+    } catch (error) {
+      setMessage(error.message || 'Unable to backfill payouts.');
+    } finally {
+      setBackfillLoading(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <section className="rounded-[2.5rem] border border-white/70 bg-white/85 p-6 shadow-[0_20px_70px_rgba(15,23,42,0.06)]">
         <div className="inline-flex rounded-full border border-pink-100 bg-pink-50 px-4 py-2 text-xs uppercase tracking-[0.24em] text-pink-600">Payouts</div>
         <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">Track automatic property payouts and referral commissions in one place.</h1>
         <p className="mt-3 text-sm leading-6 text-slate-600">Use this page to review pending referral commission payouts and monitor completed investor payout activity.</p>
+        <div className="mt-5">
+          <button type="button" onClick={runBackfill} disabled={backfillLoading} className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60">{backfillLoading ? 'Backfilling payouts...' : 'Backfill owed payouts now'}</button>
+        </div>
         {message ? <p className="mt-3 text-sm text-slate-600">{message}</p> : null}
       </section>
 
