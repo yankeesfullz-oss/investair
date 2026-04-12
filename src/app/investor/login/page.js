@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
 import { useInvestorAuth } from '@/components/Investor/AuthProvider';
-import { validateInvestorLoginForm } from '@/lib/investorAuthValidation';
+import { normalizeEmail, validateInvestorLoginForm } from '@/lib/investorAuthValidation';
 
 export default function InvestorLoginPage() {
   return (
@@ -53,7 +53,7 @@ function InvestorLoginPageContent() {
 
     setSubmitting(true);
     try {
-      await login({ email: form.email, password: form.password });
+      await login({ email: normalizeEmail(form.email), password: form.password });
       router.replace(redirectTo);
     } catch (error) {
       setServerError(error.message || 'Unable to log in right now.');

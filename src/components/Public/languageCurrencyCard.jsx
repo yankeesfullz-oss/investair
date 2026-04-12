@@ -1,8 +1,8 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  DEFAULT_SITE_LANGUAGE,
   DEFAULT_SITE_CURRENCY,
-  STORAGE_KEYS,
   formatLocaleLabel,
   getCountryFromLocale,
   getCountryPreference,
@@ -15,12 +15,22 @@ const TABS = {
 };
 
 export default function LanguageCurrencyCard({ onClose }) {
-  const { setPreferences } = useLanguagePreference();
+  const {
+    currentCountry,
+    currentCurrency,
+    currentLocale,
+    resetLanguagePreferences,
+    setPreferences,
+  } = useLanguagePreference();
   const [tab, setTab] = useState(TABS.LANGUAGE);
   const [countriesList, setCountriesList] = useState([]);
   const [currenciesList, setCurrenciesList] = useState([]);
-  const [selectedCountry, setSelectedCountry] = useState(null);
-  const [selectedCurrency, setSelectedCurrency] = useState(null);
+  const [selectedCountry, setSelectedCountry] = useState(
+    () => currentCountry || getCountryFromLocale(currentLocale) || getCountryFromLocale(DEFAULT_SITE_LANGUAGE) || "US"
+  );
+  const [selectedCurrency, setSelectedCurrency] = useState(
+    () => currentCurrency || DEFAULT_SITE_CURRENCY
+  );
   const [search, setSearch] = useState("");
 
   useEffect(() => {
@@ -52,15 +62,18 @@ export default function LanguageCurrencyCard({ onClose }) {
       } catch (err) {
         console.error(err);
       }
-
-      const storedCountry = localStorage.getItem(STORAGE_KEYS.country);
-      const storedLocale = localStorage.getItem(STORAGE_KEYS.language);
-      const storedCurrency = localStorage.getItem(STORAGE_KEYS.currency);
-
-      setSelectedCountry(storedCountry || getCountryFromLocale(storedLocale));
-      setSelectedCurrency(storedCurrency);
     })();
   }, []);
+
+  useEffect(() => {
+    setSelectedCountry(
+      currentCountry || getCountryFromLocale(currentLocale) || getCountryFromLocale(DEFAULT_SITE_LANGUAGE) || "US"
+    );
+  }, [currentCountry, currentLocale]);
+
+  useEffect(() => {
+    setSelectedCurrency(currentCurrency || DEFAULT_SITE_CURRENCY);
+  }, [currentCurrency]);
 
   const filteredCountries = useMemo(() => {
     return countriesList.filter(
@@ -81,11 +94,23 @@ export default function LanguageCurrencyCard({ onClose }) {
   function saveAndClose() {
     const preference = getCountryPreference(selectedCountry);
 
+    if (!preference?.locale) {
+      return;
+    }
+
     setPreferences({
-      country: preference?.country || selectedCountry,
-      currency: selectedCurrency || preference?.currency || DEFAULT_SITE_CURRENCY,
-      locale: preference?.locale || localStorage.getItem(STORAGE_KEYS.language) || "en-US",
+      country: preference.country,
+      currency: selectedCurrency || currentCurrency || preference.currency || DEFAULT_SITE_CURRENCY,
+      locale: preference.locale,
     });
+    onClose?.();
+  }
+
+  function resetLanguageAndClose() {
+    setSearch("");
+    setSelectedCountry(getCountryFromLocale(DEFAULT_SITE_LANGUAGE) || "US");
+    setSelectedCurrency(currentCurrency || DEFAULT_SITE_CURRENCY);
+    resetLanguagePreferences();
     onClose?.();
   }
 
@@ -183,7 +208,13 @@ export default function LanguageCurrencyCard({ onClose }) {
         </div>
 
         {/* FOOTER */}
-        <div className="flex justify-end border-t p-4">
+        <div className="flex flex-col gap-3 border-t p-4 sm:flex-row sm:items-center sm:justify-between">
+          <button
+            onClick={resetLanguageAndClose}
+            className="w-full rounded-lg border border-neutral-300 px-6 py-2 text-neutral-800 transition hover:bg-neutral-50 sm:w-auto"
+          >
+            Reset language
+          </button>
           <button
             onClick={saveAndClose}
             className="w-full rounded-lg bg-black px-6 py-2 text-white sm:w-auto"

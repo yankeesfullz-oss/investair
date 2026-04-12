@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff, UserPlus, WalletCards } from 'lucide-react';
 import { useInvestorAuth } from '@/components/Investor/AuthProvider';
-import { PASSWORD_REQUIREMENTS_TEXT, validateInvestorSignupForm } from '@/lib/investorAuthValidation';
+import { normalizeEmail, PASSWORD_REQUIREMENTS_TEXT, validateInvestorSignupForm } from '@/lib/investorAuthValidation';
 
 export default function InvestorSignupPage() {
   return (
@@ -54,7 +54,12 @@ function InvestorSignupPageContent() {
 
     setSubmitting(true);
     try {
-      await signup({ ...form, referralCode });
+      await signup({
+        ...form,
+        email: normalizeEmail(form.email),
+        fullName: String(form.fullName || '').trim(),
+        referralCode,
+      });
       router.replace(redirectTo);
     } catch (error) {
       setServerError(error.message || 'Unable to create your account right now.');
